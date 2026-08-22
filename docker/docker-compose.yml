@@ -1,0 +1,36 @@
+# `docker compose -f docker/docker-compose.yml up` runs the demo end to end:
+# generates a scene, detects, tracks, scores against ground truth and writes an
+# annotated video into ./results.
+#
+# The model is the one thing it cannot generate.  The `fetch` service pulls the
+# published weights from the GitHub Release before the demo starts, so a clean
+# machine with docker and a network connection needs no other step.
+
+name: edgetrack
+
+services:
+  fetch:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.runtime
+    volumes:
+      - ../models:/app/models
+    command: python scripts/fetch_model.py --out /app/models
+
+  demo:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.runtime
+    depends_on:
+      fetch:
+        condition: service_completed_successfully
+    volumes:
+      - ../models:/app/models:ro
+      - ../results:/app/results
+    command: >
+      python scripts/run_demo.py
+        --source synth:7
+        --model /app/models/yolov8n_edgetrack_fp32.onnx
+        --tracker bytetrack
+        --video /app/results/demo.mp4
+        --out /app/results/demo.json

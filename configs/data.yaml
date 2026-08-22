@@ -1,0 +1,47 @@
+# The dataset contract.  scripts/make_dataset.py writes the Ultralytics-facing
+# data/processed/data.yaml; this file is the human-facing record of what the
+# set is and it is checked against edgetrack.data.synth by tests/test_configs.py.
+
+name: edgetrack-warehouse-synth
+version: 1
+generator: edgetrack.data.synth
+
+classes:
+  0: person
+  1: forklift
+  2: pallet
+  3: cone
+
+image:
+  width: 640
+  height: 384
+
+splits:
+  train:
+    sequences: 60
+    frames_per_sequence: 24
+    palette: warehouse
+    seed_base: 1000
+  val:
+    sequences: 15
+    frames_per_sequence: 24
+    palette: warehouse
+    seed_base: 11000
+  test:
+    sequences: 12
+    frames_per_sequence: 120
+    palette: depot
+    seed_base: 21000
+
+# Labels below this visibility are dropped from the detection ground truth and
+# kept, with the visibility column, in the MOT ground truth.
+min_label_visibility: 0.35
+
+# The test split is rendered in a different palette with more noise and more
+# motion blur than train and val.  That gap is deliberate: without it the
+# detector saturates and the accuracy cost of INT8 quantisation is unmeasurable.
+domain_gap:
+  palette: depot
+  noise_sigma: 7.0
+  blur_scale: 0.85
+  jpeg_quality: [60, 88]

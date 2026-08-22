@@ -1,0 +1,101 @@
+{
+  "source": "results/published/tracking.json",
+  "detections": "model",
+  "causes": {
+    "bytetrack": {
+      "occlusion": 15,
+      "detector_gap": 9
+    },
+    "deepsort": {
+      "occlusion": 20,
+      "unattributed": 3,
+      "detector_gap": 9
+    }
+  },
+  "totals": {
+    "bytetrack": 24,
+    "deepsort": 32
+  },
+  "switches_per_hundred_frames": {
+    "bytetrack": 0.2947,
+    "deepsort": 0.3929
+  },
+  "worst_sequences": {
+    "bytetrack": [
+      {
+        "sequence": "test_seq21005",
+        "switches": 4,
+        "idf1": 0.84766,
+        "causes": {
+          "detector_gap": 1,
+          "occlusion": 3,
+          "crossing": 0,
+          "fast_motion": 0,
+          "unattributed": 0
+        }
+      },
+      {
+        "sequence": "test_seq21002",
+        "switches": 3,
+        "idf1": 0.90819,
+        "causes": {
+          "detector_gap": 0,
+          "occlusion": 3,
+          "crossing": 0,
+          "fast_motion": 0,
+          "unattributed": 0
+        }
+      },
+      {
+        "sequence": "test_seq21003",
+        "switches": 3,
+        "idf1": 0.90937,
+        "causes": {
+          "detector_gap": 0,
+          "occlusion": 3,
+          "crossing": 0,
+          "fast_motion": 0,
+          "unattributed": 0
+        }
+      }
+    ],
+    "deepsort": [
+      {
+        "sequence": "test_seq21007",
+        "switches": 6,
+        "idf1": 0.86814,
+        "causes": {
+          "detector_gap": 2,
+          "occlusion": 3,
+          "crossing": 0,
+          "fast_motion": 0,
+          "unattributed": 1
+        }
+      },
+      {
+        "sequence": "test_seq21000",
+        "switches": 5,
+        "idf1": 0.90677,
+        "causes": {
+          "detector_gap": 0,
+          "occlusion": 4,
+          "crossing": 0,
+          "fast_motion": 0,
+          "unattributed": 1
+        }
+      },
+      {
+        "sequence": "test_seq21005",
+        "switches": 4,
+        "idf1": 0.83675,
+        "causes": {
+          "detector_gap": 1,
+          "occlusion": 3,
+          "crossing": 0,
+          "fast_motion": 0,
+          "unattributed": 0
+        }
+      }
+    ]
+  }
+}

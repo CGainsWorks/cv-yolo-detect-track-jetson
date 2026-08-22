@@ -1,0 +1,68 @@
+# Benchmark matrix.  Every row here is one line of the headline table.
+#
+# What is missing and why.  ONNX Runtime's CUDA execution provider does not
+# register on the host that produced the published results: onnxruntime-gpu
+# lists it, the CUDA 12 and cuDNN 9 libraries are present, and the session
+# still falls back to the CPU provider.  Rather than publish a GPU row that is
+# secretly a CPU row, the ONNX rows are CPU only and the GPU numbers come from
+# the PyTorch backend.  docs/limitations.md carries the detail.
+#
+# The TensorRT rows are listed and are expected to be skipped anywhere without
+# a built engine: scripts/benchmark_latency.py takes --skip-missing and records
+# what it skipped and why, so an absent row is visible in the results file
+# rather than silently missing from the table.
+
+variants:
+  - name: onnx-cpu-fp32
+    model: models/yolov8n_edgetrack_fp32.onnx
+    backend: onnx
+    providers: [CPUExecutionProvider]
+
+  - name: onnx-cpu-fp16
+    model: models/yolov8n_edgetrack_fp16.onnx
+    backend: onnx
+    providers: [CPUExecutionProvider]
+
+  - name: onnx-cpu-int8
+    model: models/yolov8n_edgetrack_int8.onnx
+    backend: onnx
+    providers: [CPUExecutionProvider]
+
+  # The two INT8 ablations.  They exist so the claim that leaving the detection
+  # head in float is worth its cost is a measurement rather than an assertion;
+  # scripts/quantize_onnx.py explains what each one quantises.
+  - name: onnx-cpu-int8-allconv
+    model: models/yolov8n_edgetrack_int8_allconv.onnx
+    backend: onnx
+    providers: [CPUExecutionProvider]
+
+  - name: onnx-cpu-int8-allops
+    model: models/yolov8n_edgetrack_int8_allops.onnx
+    backend: onnx
+    providers: [CPUExecutionProvider]
+
+  - name: torch-cuda-fp32
+    model: models/yolov8n_edgetrack.pt
+    backend: torch
+    device: cuda
+    half: false
+
+  - name: torch-cuda-fp16
+    model: models/yolov8n_edgetrack.pt
+    backend: torch
+    device: cuda
+    half: true
+
+  # Jetson only.  Never run on the machine that produced the published
+  # results; see docs/jetson.md.
+  - name: tensorrt-fp32
+    model: models/yolov8n_edgetrack_fp32.engine
+    backend: tensorrt
+
+  - name: tensorrt-fp16
+    model: models/yolov8n_edgetrack_fp16.engine
+    backend: tensorrt
+
+  - name: tensorrt-int8
+    model: models/yolov8n_edgetrack_int8.engine
+    backend: tensorrt

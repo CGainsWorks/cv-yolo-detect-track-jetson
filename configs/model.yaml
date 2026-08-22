@@ -1,0 +1,18 @@
+# Detector.  yolov8n because the target is a Jetson Orin Nano: the s and m
+# variants fit in memory but leave no headroom for the tracker and the ROS2
+# stack on the same 15 W budget.
+
+architecture: yolov8n
+pretrained: yolov8n.pt        # COCO weights, fine-tuned from here
+num_classes: 4
+
+# Training runs square, inference runs at the native aspect.  See the note at
+# the top of scripts/train.py for why these differ.
+train_imgsz: 640
+infer_imgsz: [640, 384]       # width, height
+
+nms:
+  conf_threshold: 0.25
+  iou_threshold: 0.6
+  max_detections: 100
+  class_agnostic: false

@@ -1,0 +1,42 @@
+# Export and quantisation.  Read by scripts/export_onnx.py,
+# scripts/quantize_onnx.py and scripts/export_tensorrt.py.
+
+onnx:
+  opset: 13                 # the minimum that carries the `axis` attribute on
+                            # QuantizeLinear and DequantizeLinear, without which
+                            # per-channel INT8 produces a model ONNX Runtime
+                            # rejects.  TensorRT 8.5 on Jetpack 5 parses 13.
+  simplify: true
+  dynamic: false            # a fixed shape is what lets TensorRT pick the best
+                            # kernels and is the only shape the benchmark uses
+  imgsz: [640, 384]         # width, height
+
+quantisation:
+  int8:
+    method: static          # QDQ static quantisation, not dynamic
+    per_channel: true
+    calibration_images: 256
+    calibration_split: train
+    calibration_seed: 7
+    activation_type: uint8
+    weight_type: int8
+    # Three variants are built and all three are scored.  The published `int8`
+    # model quantises convolutions only and leaves the detection head's output
+    # convolutions in float; `int8_allconv` quantises the head too and
+    # `int8_allops` quantises everything ONNX Runtime will accept, which is the
+    # library default and which detects nothing at all.  The exclusion list is
+    # derived from the graph by scripts/quantize_onnx.py rather than written
+    # here, so it keeps matching if the architecture changes.
+    variants: [int8, int8_allconv, int8_allops]
+  fp16:
+    # Not a conversion.  onnxconverter_common leaves an invalid type on the
+    # Resize node in this graph, so FP16 is a separate export from a half
+    # precision module; see the docstring of scripts/export_onnx.py.
+    method: export_from_checkpoint
+
+tensorrt:
+  workspace_gb: 2
+  precisions: [fp32, fp16, int8]
+  int8_calibration_cache: models/calib.cache
+  # Never executed on the machine that produced the published results.  See
+  # docs/jetson.md.

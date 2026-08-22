@@ -1,0 +1,16 @@
+# Jetson runtime.  UNTESTED: no Jetson was available when this was written and
+# nothing in results/published/ came from a board.  See docs/jetson.md.
+#
+# TensorRT, CUDA and cuDNN come from Jetpack and are already in the system
+# Python.  Do not pip install them and do not build the virtualenv with
+# --no-system-site-packages, or `import tensorrt` will fail with a message that
+# suggests the wrong fix.
+#
+#   python3 -m venv --system-site-packages .venv
+
+numpy>=1.26,<3
+scipy>=1.11,<2
+opencv-python-headless>=4.9      # or the Jetpack OpenCV, which has CUDA support
+pyyaml>=6.0
+tqdm>=4.66
+pycuda>=2024.1                   # host and device memory for the TRT backend

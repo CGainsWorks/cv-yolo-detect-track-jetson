@@ -1,0 +1,26 @@
+# Runtime.  What the deployed image and the ROS2 node need, and nothing else.
+# Python 3.10 or newer; 3.12 produced the published results.
+#
+# Deliberately absent: torch and ultralytics.  The detector runs on ONNX Runtime
+# or TensorRT and the appearance encoder runs on ONNX Runtime, so neither is
+# needed once the artefacts exist.  Ultralytics is AGPL-3.0 and this repository
+# is MIT, so keeping it out of the runtime keeps the deployed image
+# MIT-compatible; docs/licences.md has the reasoning and
+# tests/test_runtime_boundary.py enforces it.
+
+numpy>=1.26,<3
+scipy>=1.11,<2
+opencv-python-headless>=4.9      # headless: nothing here opens a window
+pyyaml>=6.0
+tqdm>=4.66
+imageio>=2.34                    # the README GIF
+
+# Detector and appearance runtime.  onnxruntime is the portable backend and is
+# what CI uses.  onnxruntime-gpu and tensorrt are installed separately on a
+# Jetson or a CUDA host; see docs/jetson.md.
+onnxruntime>=1.18
+
+# Development
+pytest>=8.0
+flake8>=7.0
+motmetrics>=1.4                  # independent cross-check of the MOT metrics

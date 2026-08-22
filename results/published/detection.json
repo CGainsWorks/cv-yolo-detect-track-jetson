@@ -1,0 +1,233 @@
+{
+  "split": "test",
+  "images": 1440,
+  "conf_threshold": 0.001,
+  "iou_threshold": 0.6,
+  "imgsz_wh": [
+    640,
+    384
+  ],
+  "classes": [
+    "person",
+    "forklift",
+    "pallet",
+    "cone"
+  ],
+  "variants": {
+    "yolov8n_edgetrack_fp32": {
+      "model": "models/yolov8n_edgetrack_fp32.onnx",
+      "detector": {
+        "backend": "onnxruntime",
+        "precision": "fp32",
+        "model_path": "models/yolov8n_edgetrack_fp32.onnx",
+        "providers": [
+          "CPUExecutionProvider"
+        ],
+        "input_dtype": "float32"
+      },
+      "metrics": {
+        "map50": 0.9727,
+        "map50_95": 0.86495,
+        "precision": 0.95974,
+        "recall": 0.95456,
+        "n_gt": 8142,
+        "n_pred": 22096,
+        "per_class_ap50": {
+          "0": 0.98826,
+          "1": 0.97741,
+          "2": 0.98572,
+          "3": 0.93942
+        },
+        "per_class_ap50_95": {
+          "0": 0.9305,
+          "1": 0.90837,
+          "2": 0.83831,
+          "3": 0.78261
+        }
+      },
+      "per_class_ap50_95_named": {
+        "person": 0.9305,
+        "forklift": 0.90837,
+        "pallet": 0.83831,
+        "cone": 0.78261
+      },
+      "wall_ms": {
+        "mean": 19.318,
+        "p50": 19.303,
+        "p95": 21.276
+      }
+    },
+    "yolov8n_edgetrack_fp16": {
+      "model": "models/yolov8n_edgetrack_fp16.onnx",
+      "detector": {
+        "backend": "onnxruntime",
+        "precision": "fp16",
+        "model_path": "models/yolov8n_edgetrack_fp16.onnx",
+        "providers": [
+          "CPUExecutionProvider"
+        ],
+        "input_dtype": "float16"
+      },
+      "metrics": {
+        "map50": 0.9727,
+        "map50_95": 0.86151,
+        "precision": 0.95963,
+        "recall": 0.95468,
+        "n_gt": 8142,
+        "n_pred": 22106,
+        "per_class_ap50": {
+          "0": 0.98828,
+          "1": 0.97742,
+          "2": 0.98572,
+          "3": 0.93938
+        },
+        "per_class_ap50_95": {
+          "0": 0.9301,
+          "1": 0.90838,
+          "2": 0.83311,
+          "3": 0.77445
+        }
+      },
+      "per_class_ap50_95_named": {
+        "person": 0.9301,
+        "forklift": 0.90838,
+        "pallet": 0.83311,
+        "cone": 0.77445
+      },
+      "wall_ms": {
+        "mean": 22.635,
+        "p50": 22.586,
+        "p95": 24.778
+      }
+    },
+    "yolov8n_edgetrack_int8": {
+      "model": "models/yolov8n_edgetrack_int8.onnx",
+      "detector": {
+        "backend": "onnxruntime",
+        "precision": "int8",
+        "model_path": "models/yolov8n_edgetrack_int8.onnx",
+        "providers": [
+          "CPUExecutionProvider"
+        ],
+        "input_dtype": "float32"
+      },
+      "metrics": {
+        "map50": 0.97003,
+        "map50_95": 0.8549,
+        "precision": 0.96381,
+        "recall": 0.94866,
+        "n_gt": 8142,
+        "n_pred": 29154,
+        "per_class_ap50": {
+          "0": 0.98751,
+          "1": 0.97672,
+          "2": 0.98524,
+          "3": 0.93066
+        },
+        "per_class_ap50_95": {
+          "0": 0.92754,
+          "1": 0.90071,
+          "2": 0.82784,
+          "3": 0.7635
+        }
+      },
+      "per_class_ap50_95_named": {
+        "person": 0.92754,
+        "forklift": 0.90071,
+        "pallet": 0.82784,
+        "cone": 0.7635
+      },
+      "wall_ms": {
+        "mean": 20.606,
+        "p50": 20.481,
+        "p95": 23.837
+      }
+    },
+    "yolov8n_edgetrack_int8_allconv": {
+      "model": "models/yolov8n_edgetrack_int8_allconv.onnx",
+      "detector": {
+        "backend": "onnxruntime",
+        "precision": "int8",
+        "model_path": "models/yolov8n_edgetrack_int8_allconv.onnx",
+        "providers": [
+          "CPUExecutionProvider"
+        ],
+        "input_dtype": "float32"
+      },
+      "metrics": {
+        "map50": 0.96977,
+        "map50_95": 0.81931,
+        "precision": 0.96179,
+        "recall": 0.94903,
+        "n_gt": 8142,
+        "n_pred": 29776,
+        "per_class_ap50": {
+          "0": 0.98706,
+          "1": 0.97655,
+          "2": 0.9846,
+          "3": 0.93086
+        },
+        "per_class_ap50_95": {
+          "0": 0.8861,
+          "1": 0.87415,
+          "2": 0.8027,
+          "3": 0.7143
+        }
+      },
+      "per_class_ap50_95_named": {
+        "person": 0.8861,
+        "forklift": 0.87415,
+        "pallet": 0.8027,
+        "cone": 0.7143
+      },
+      "wall_ms": {
+        "mean": 18.037,
+        "p50": 18.225,
+        "p95": 20.709
+      }
+    },
+    "yolov8n_edgetrack_int8_allops": {
+      "model": "models/yolov8n_edgetrack_int8_allops.onnx",
+      "detector": {
+        "backend": "onnxruntime",
+        "precision": "int8",
+        "model_path": "models/yolov8n_edgetrack_int8_allops.onnx",
+        "providers": [
+          "CPUExecutionProvider"
+        ],
+        "input_dtype": "float32"
+      },
+      "metrics": {
+        "map50": 0.0,
+        "map50_95": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "n_gt": 8142,
+        "n_pred": 0,
+        "per_class_ap50": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0
+        },
+        "per_class_ap50_95": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0
+        }
+      },
+      "per_class_ap50_95_named": {
+        "person": 0.0,
+        "forklift": 0.0,
+        "pallet": 0.0,
+        "cone": 0.0
+      },
+      "wall_ms": {
+        "mean": 15.074,
+        "p50": 15.236,
+        "p95": 17.516
+      }
+    }
+  }
+}

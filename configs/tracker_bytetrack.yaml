@@ -1,0 +1,18 @@
+# ByteTrack parameters.  Defaults in edgetrack.track.bytetrack.ByteTrackConfig
+# match this file; tests/test_configs.py asserts that they do, so this is the
+# single place to change them.
+#
+# The values are the ones scripts/tune_tracker.py picked on the val split,
+# maximising IDF1.  The full sweep of 81 settings is in
+# results/published/tuning_bytetrack.json.
+
+track_thresh: 0.5              # split point between the high and low passes
+det_thresh: 0.6                # bar for starting a new identity
+low_thresh: 0.1                # detections below this are discarded entirely
+match_thresh: 0.7              # IoU cost ceiling, first pass
+second_match_thresh: 0.5       # IoU cost ceiling, low-score pass
+unconfirmed_match_thresh: 0.7  # IoU cost ceiling against tentative tracks
+track_buffer: 30               # frames a lost track survives before deletion
+n_init: 1                      # hits before a track is published
+fuse_score: false              # multiply IoU similarity by detection score
+class_aware: true              # forbid cross-class association

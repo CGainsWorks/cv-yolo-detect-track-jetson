@@ -1,0 +1,40 @@
+# Training and export image.  CUDA base, so this is the image that fine-tunes
+# YOLOv8 and writes the ONNX graphs.
+#
+# It contains ultralytics, which is AGPL-3.0.  That is fine here and not fine in
+# the runtime image; docs/licences.md explains the boundary and
+# docker/Dockerfile.runtime enforces it.
+#
+# The default tag builds against CUDA 12.6, matching the torch wheel index in
+# requirements-train.txt.  Override with --build-arg CUDA_TAG=... if the host
+# driver is older.
+
+ARG CUDA_TAG=12.6.3-cudnn-runtime-ubuntu22.04
+FROM nvidia/cuda:${CUDA_TAG}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3 python3-pip python3-venv libgl1 libglib2.0-0 git \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt requirements-train.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt \
+ && pip3 install --no-cache-dir -r requirements-train.txt
+
+COPY . .
+
+ENV PYTHONPATH=/app/src \
+    YOLO_CONFIG_DIR=/tmp/ultralytics
+
+# Ultralytics resolves a relative --project against its own settings file,
+# which lives in the home directory and is shared across every project on the
+# machine.  Pinning it here keeps a container run from writing into whatever
+# was trained last.
+ENV ULTRALYTICS_RUNS_DIR=/app/models/runs
+
+CMD ["make", "train"]

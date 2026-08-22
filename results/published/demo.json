@@ -1,0 +1,95 @@
+{
+  "source": "synth:7",
+  "source_description": "synthetic sequence, seed 7, palette depot",
+  "model": "models/yolov8n_edgetrack_fp32.onnx",
+  "backend": "onnx",
+  "detector": {
+    "backend": "onnxruntime",
+    "precision": "fp32",
+    "model_path": "models/yolov8n_edgetrack_fp32.onnx",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "input_dtype": "float32"
+  },
+  "tracker": "bytetrack",
+  "appearance": null,
+  "frames_run": 120,
+  "detections_total": 709,
+  "unique_track_ids": 8,
+  "wall_seconds": 5.481,
+  "fps": 21.89,
+  "stages_ms": {
+    "preprocess": {
+      "mean": 3.119,
+      "p50": 2.917,
+      "p95": 4.059
+    },
+    "inference": {
+      "mean": 16.176,
+      "p50": 16.214,
+      "p95": 18.64
+    },
+    "postprocess": {
+      "mean": 0.65,
+      "p50": 0.598,
+      "p95": 0.986
+    },
+    "detect_total": {
+      "mean": 20.115,
+      "p50": 19.934,
+      "p95": 23.349
+    },
+    "appearance": {
+      "mean": 0.001,
+      "p50": 0.001,
+      "p95": 0.002
+    },
+    "track": {
+      "mean": 0.686,
+      "p50": 0.653,
+      "p95": 1.035
+    },
+    "total": {
+      "mean": 20.802,
+      "p50": 20.589,
+      "p95": 24.017
+    }
+  },
+  "video": "results/demo.mp4",
+  "gif": "docs/figures/demo.gif",
+  "ground_truth": "synthetic, regenerated from the source seed",
+  "metrics": {
+    "mota": 0.97067,
+    "motp": 0.05556,
+    "motp_iou": 0.94444,
+    "idf1": 0.93644,
+    "idp": 0.94714,
+    "idr": 0.92598,
+    "precision": 0.99714,
+    "recall": 0.97486,
+    "num_switches": 1,
+    "num_fragmentations": 4,
+    "num_false_positives": 2,
+    "num_misses": 18,
+    "num_matches": 697,
+    "num_detections": 698,
+    "num_objects": 716,
+    "num_predictions": 700,
+    "mostly_tracked": 7,
+    "partially_tracked": 0,
+    "mostly_lost": 0,
+    "num_gt_ids": 7,
+    "idtp": 663,
+    "idfp": 37,
+    "idfn": 53,
+    "num_hyp_ids": 8
+  },
+  "switch_causes": {
+    "detector_gap": 0,
+    "occlusion": 1,
+    "crossing": 0,
+    "fast_motion": 0,
+    "unattributed": 0
+  }
+}

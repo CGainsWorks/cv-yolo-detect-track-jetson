@@ -1,0 +1,344 @@
+name: ci
+
+# What CI can and cannot do here.
+#
+# It runs everything that needs neither a GPU nor a Jetson: linting, the whole
+# test suite on two Python versions, the dataset generator, the export and
+# quantisation chain on real weights, the demo end to end with real detections
+# and real tracking metrics, the ROS2 node under a real rclpy in a Humble
+# container, the runtime image, and the check that every number quoted in the
+# documentation comes from a file in results/published/.
+#
+# It does not run TensorRT, because GitHub's runners have no NVIDIA GPU and
+# because the target is a Jetson that does not exist yet.  Nothing in
+# results/published/ came from TensorRT and docs/jetson.md says so.
+#
+# The part worth noticing is the `ros2` job: the node runs under a real ROS2
+# daemon and a real subscriber counts the messages, rather than a mock standing
+# in for rclpy.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONPATH: src
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint
+        run: python -m flake8 src/ tests/ scripts/
+
+      - name: Tests that need no weights
+        run: python -m pytest tests/ -q -m "not needs_model" --durations=15
+
+      - name: The dataset generator is deterministic across a fresh process
+        run: |
+          python scripts/make_dataset.py --preset tiny --root /tmp/a --quiet
+          python scripts/make_dataset.py --preset tiny --root /tmp/b --quiet
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          def digest(root):
+              h = hashlib.sha256()
+              for path in sorted(Path(root).rglob("*")):
+                  if path.is_file() and path.name != "dataset.json":
+                      h.update(path.relative_to(root).as_posix().encode())
+                      h.update(path.read_bytes())
+              return h.hexdigest()
+
+          a, b = digest("/tmp/a"), digest("/tmp/b")
+          print("a", a)
+          print("b", b)
+          assert a == b, "the same seeds produced different data"
+          summary = json.load(open("/tmp/a/dataset.json"))
+          for split, stats in summary["splits"].items():
+              print(split, stats["images"], "images", stats["labelled_boxes"], "boxes")
+              assert stats["images"] > 0 and stats["labelled_boxes"] > 0
+          PY
+
+      - name: Every number in the documentation comes from a published result
+        run: python scripts/check_docs.py --require-results
+
+      - name: The published results are internally consistent
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          published = Path("results/published")
+          detection = json.load(open(published / "detection.json"))
+          latency = json.load(open(published / "latency.json"))
+          tracking = json.load(open(published / "tracking.json"))
+
+          # Nothing published may claim to have come from a Jetson, because
+          # nothing did.
+          assert latency["host"]["device_class"] == "desktop", latency["host"]
+          assert all(
+              entry["backend"] != "tensorrt" for entry in latency["results"]
+          ), "a TensorRT row appeared in the published latency results"
+          print("skipped variants:", [s["name"] for s in latency["skipped"]])
+
+          fp32 = next(
+              e for e in detection["variants"].values()
+              if e["detector"]["precision"] == "fp32"
+          )
+          assert fp32["metrics"]["map50_95"] > 0.5, fp32["metrics"]
+          for name, entry in tracking["trackers"].items():
+              aggregate = entry["aggregate"]
+              print(name, "MOTA", aggregate["mota"], "IDF1", aggregate["idf1"])
+              assert 0.0 < aggregate["idf1"] <= 1.0
+              assert aggregate["num_objects"] > 0
+          PY
+
+      - name: benchmarks/results.csv matches the published JSON
+        run: |
+          python scripts/make_results_table.py --published results/published \
+            --csv-out /tmp/results.csv --table-dir /tmp/tables --quiet
+          diff -u benchmarks/results.csv /tmp/results.csv
+          diff -u docs/tables/headline.md /tmp/tables/headline.md
+          diff -u docs/tables/precision_delta.md /tmp/tables/precision_delta.md
+
+  detector:
+    # Exports the real model and runs it.  Separate from `check` because it
+    # installs the AGPL training toolchain and pulls torch, which has no
+    # business in the runtime image.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-train.txt
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch the published weights
+        id: fetch
+        continue-on-error: true
+        run: python scripts/fetch_model.py
+        env:
+          # Needed only while the repository is private; a public release asset
+          # downloads without it.  Steps that need the weights are conditional
+          # on this one succeeding, so an unreachable release skips them rather
+          # than failing the job.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate a small dataset
+        run: python scripts/make_dataset.py --preset small --quiet
+
+      - name: Tests that need the exported model
+        if: steps.fetch.outcome == 'success'
+        run: python -m pytest tests/test_backends.py -q -m "not slow" --durations=10
+
+      - name: The demo runs end to end and the metrics are real
+        if: steps.fetch.outcome == 'success'
+        run: |
+          mkdir -p results
+          python scripts/run_demo.py --source synth:7 --frames 60 \
+            --model models/yolov8n_edgetrack_fp32.onnx --tracker bytetrack \
+            --out results/ci_demo_bytetrack.json --quiet
+          python scripts/run_demo.py --source synth:7 --frames 60 \
+            --model models/yolov8n_edgetrack_fp32.onnx --tracker deepsort \
+            --appearance reid --reid-model models/reid_edgetrack.onnx \
+            --out results/ci_demo_deepsort.json --quiet
+          python - <<'PY'
+          import json
+
+          for name in ("bytetrack", "deepsort"):
+              report = json.load(open(f"results/ci_demo_{name}.json"))
+              metrics = report["metrics"]
+              print(name, json.dumps({k: metrics[k] for k in
+                    ("mota", "idf1", "num_switches", "num_misses",
+                     "num_false_positives")}))
+              assert report["frames_run"] == 60, report["frames_run"]
+              assert report["detections_total"] > 100, report["detections_total"]
+              # A regression guard rather than a benchmark.  The published
+              # numbers come from the full test split on a machine that is not a
+              # CI runner; these bounds only catch a pipeline that has stopped
+              # working.
+              assert metrics["mota"] > 0.5, metrics["mota"]
+              assert metrics["idf1"] > 0.5, metrics["idf1"]
+              assert report["unique_track_ids"] >= 3, report["unique_track_ids"]
+              assert sum(report["switch_causes"].values()) == metrics["num_switches"]
+          PY
+
+      - name: The exports rebuild from the checkpoint
+        if: steps.fetch.outcome == 'success'
+        run: |
+          pip install -r requirements-train.txt
+          python scripts/export_onnx.py --weights models/yolov8n_edgetrack.pt \
+            --precision fp32 --out /tmp/rebuilt_fp32.onnx
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rebuilt = json.load(open("/tmp/rebuilt_fp32.json"))
+          published = json.load(open("models/yolov8n_edgetrack_fp32.json"))
+          print("rebuilt", rebuilt["sha256"])
+          print("published", published["sha256"])
+          # Byte equality is not expected across torch and onnx versions.  What
+          # must hold is that the graph the exporter produces has the same
+          # shape and the same opset as the one the results came from.
+          assert rebuilt["output_shape"] == published["output_shape"]
+          assert rebuilt["opset"] == published["opset"]
+          assert rebuilt["imgsz_wh"] == published["imgsz_wh"]
+          PY
+
+      - name: INT8 quantisation still produces a working model
+        if: steps.fetch.outcome == 'success'
+        run: |
+          python scripts/quantize_onnx.py --model models/yolov8n_edgetrack_fp32.onnx \
+            --variants int8 --data-root data/processed
+          python - <<'PY'
+          import json
+          record = json.load(open("models/quantisation.json"))["int8"]
+          print(json.dumps(record, indent=2)[:600])
+          assert record["qdq_nodes"] > 100, record["qdq_nodes"]
+          assert record["size_ratio"] < 0.4, record["size_ratio"]
+          assert record["nodes_excluded"], "the detection head was quantised"
+          PY
+
+      - name: A quick accuracy check on the small split
+        if: steps.fetch.outcome == 'success'
+        run: |
+          python scripts/evaluate.py --split test --limit 200 \
+            --providers CPUExecutionProvider --out results/ci_detection.json \
+            --models models/yolov8n_edgetrack_fp32.onnx \
+                     models/yolov8n_edgetrack_int8.onnx --quiet
+          python - <<'PY'
+          import json
+          report = json.load(open("results/ci_detection.json"))
+          entries = {
+              e["detector"]["precision"]: e["metrics"]
+              for e in report["variants"].values()
+          }
+          for precision, entry in sorted(entries.items()):
+              print(precision, entry["map50"], entry["map50_95"])
+          assert entries["fp32"]["map50_95"] > 0.6, entries["fp32"]
+          # INT8 is allowed to be worse.  It is not allowed to be broken, and
+          # broken here means the class scores come out zero, which is exactly
+          # what quantising the detection head does.
+          assert entries["int8"]["map50_95"] > 0.6, entries["int8"]
+          delta = entries["fp32"]["map50_95"] - entries["int8"]["map50_95"]
+          print(f"int8 costs {delta:.4f} mAP50-95 on this subset")
+          assert delta < 0.05, delta
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-results
+          path: results/ci_*.json
+          if-no-files-found: warn
+
+  ros2:
+    # The ROS2 claim, checked against a real rclpy rather than a stand-in.
+    runs-on: ubuntu-latest
+    container:
+      image: ros:humble-ros-base
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            python3-pip ros-humble-vision-msgs libgl1 libglib2.0-0
+          pip3 install --no-cache-dir -r requirements.txt
+
+      - name: The payload builders pass without ROS
+        shell: bash
+        run: python3 -m pytest tests/test_ros2_messages.py -q
+
+      - name: Fetch the published weights
+        shell: bash
+        run: python3 scripts/fetch_model.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: The node publishes detections, tracks and an image
+        shell: bash
+        run: |
+          source /opt/ros/humble/setup.bash
+          python3 tests/ros2_subscriber_check.py
+        env:
+          PYTHONPATH: src
+          RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the runtime image
+        run: docker build -f docker/Dockerfile.runtime -t edgetrack:ci .
+
+      - name: The image has no training toolchain in it
+        run: |
+          for module in torch ultralytics; do
+            if docker run --rm edgetrack:ci python -c "import $module" 2>/dev/null; then
+              echo "$module is in the runtime image; see docs/licences.md" >&2
+              exit 1
+            fi
+          done
+          echo "runtime image is free of torch and ultralytics"
+
+      - name: The tests pass inside the image
+        run: |
+          docker run --rm -v "$PWD/tests:/app/tests" edgetrack:ci \
+            python -m pytest /app/tests -q -m "not needs_model"
+
+      - name: The demo runs inside the image
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p results models
+          docker run --rm -v "$PWD/models:/app/models" edgetrack:ci \
+            python scripts/fetch_model.py --out /app/models
+          docker run --rm -v "$PWD/models:/app/models:ro" \
+            -v "$PWD/results:/app/results" edgetrack:ci \
+            python scripts/run_demo.py --source synth:11 --frames 40 \
+              --model /app/models/yolov8n_edgetrack_fp32.onnx \
+              --out /app/results/docker_demo.json --quiet
+          python3 - <<'PY'
+          import json
+          report = json.load(open("results/docker_demo.json"))
+          print(json.dumps(report["metrics"], indent=2)[:400])
+          assert report["frames_run"] == 40
+          assert report["metrics"]["mota"] > 0.5
+          PY

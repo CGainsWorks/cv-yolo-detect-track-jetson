@@ -1,0 +1,33 @@
+# Runtime image: ONNX Runtime, OpenCV and numpy.  No torch, no ultralytics.
+#
+# The point of this image is the thing it does not contain.  Ultralytics is
+# AGPL-3.0 and torch is roughly two gigabytes of wheel, and once the model is an
+# ONNX file neither is needed.  The `docker` job in CI runs `import torch` and
+# `import ultralytics` inside the built image and fails if either succeeds.
+
+FROM python:3.12-slim AS runtime
+
+# libgl and libglib are what opencv-python-headless still links against for its
+# image codecs.  Without them `import cv2` fails at load time with a message
+# about libGL that suggests, wrongly, that a display is needed.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY configs/ ./configs/
+COPY models/MANIFEST.json ./models/MANIFEST.json
+
+ENV PYTHONPATH=/app/src \
+    PYTHONUNBUFFERED=1
+
+# The demo on the synthetic source needs no dataset, no network and no camera,
+# which is what makes this image runnable anywhere.
+CMD ["python", "scripts/run_demo.py", "--source", "synth:7", "--frames", "60", \
+     "--out", "/app/results/demo.json"]

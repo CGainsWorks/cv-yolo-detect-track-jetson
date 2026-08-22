@@ -1,0 +1,49 @@
+# Jetson runtime image.  NEVER BUILT.
+#
+# No Jetson was available when this repository was written, this file has never
+# been through `docker build`, and no number in results/published/ came from a
+# board.  It is committed because the dependency situation on Jetpack is the
+# awkward part of a Jetson deployment and writing it down is most of the work.
+#
+# The base image needs an NGC login:
+#   docker login nvcr.io
+# and it is arm64 only, so it will not build on an x86 CI runner without qemu.
+# Pick the tag matching the Jetpack on the board:
+#   Jetpack 5.1.x  ->  r35.4.1     TensorRT 8.5, Python 3.8
+#   Jetpack 6.0    ->  r36.2.0     TensorRT 8.6, Python 3.10
+#   Jetpack 6.1    ->  r36.4.0     TensorRT 10.3, Python 3.10
+# edgetrack.detect.trt_backend handles both the TensorRT 8 and 10 APIs.
+
+ARG L4T_TAG=r36.4.0
+FROM nvcr.io/nvidia/l4t-base:${L4T_TAG}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3 python3-pip python3-venv libgl1 libglib2.0-0 \
+      python3-libnvinfer python3-libnvinfer-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# --system-site-packages is not optional.  TensorRT, CUDA and cuDNN come from
+# Jetpack and live in the system Python; an isolated virtualenv cannot see them
+# and `import tensorrt` fails with a message that suggests pip installing it,
+# which does not work on arm64.
+RUN python3 -m venv --system-site-packages /opt/venv
+ENV PATH=/opt/venv/bin:$PATH
+
+COPY requirements-jetson.txt ./
+RUN pip3 install --no-cache-dir -r requirements-jetson.txt
+
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY configs/ ./configs/
+
+ENV PYTHONPATH=/app/src
+
+# Engines are built on the board, never copied onto it: a TensorRT plan is tied
+# to the exact GPU, driver and TensorRT version that produced it.
+CMD ["sh", "scripts/bench_jetson.sh"]

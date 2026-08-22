@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Model artefacts.  Weights and graphs come from the Release named in
+# models/MANIFEST.json; engines are machine-specific and must never be
+# committed, because a TensorRT plan is tied to the exact GPU, driver and
+# TensorRT version that built it.
+models/*
+!models/MANIFEST.json
+!models/.gitkeep
+*.pt
+*.onnx
+*.onnx.data
+*.engine
+*.plan
+*.cache
+
+# Ultralytics drops its pretrained checkpoints wherever it is run from.
+yolov8*.pt
+yolo11*.pt
+yolo26*.pt
+
+# The dataset is generated, not stored.  scripts/make_dataset.py rebuilds it
+# byte for byte from the seeds in configs/data.yaml.
+data/processed/
+data/raw/
+datasets/
+runs/
+
+# Run outputs.  results/published/ is tracked and is the exception.
+results/*
+!results/.gitkeep
+!results/published/
+!results/published/**
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

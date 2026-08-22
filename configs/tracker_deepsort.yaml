@@ -1,0 +1,21 @@
+# DeepSORT parameters.  Defaults in edgetrack.track.deepsort.DeepSortConfig
+# match this file and tests/test_configs.py asserts it.
+#
+# Chosen on the val split by scripts/tune_tracker.py, maximising IDF1 over 72
+# settings; the sweep is in results/published/tuning_deepsort.json.  The gate
+# at 0.5 is looser than the paper's and matches the cosine margin measured on
+# the trained embedding in results/published/reid_train.json.
+
+max_cosine_distance: 0.5    # appearance gate; the cascade's cost ceiling
+max_iou_distance: 0.6       # IoU gate for the fallback pass
+max_age: 30                 # frames a track survives unmatched
+n_init: 2                   # hits before a track is published
+det_thresh: 0.5             # detections below this never reach the tracker
+gallery_size: 64            # descriptors kept per track
+only_position_gate: false   # gate on centre only, ignoring aspect and height
+class_aware: true           # forbid cross-class association
+lambda_motion: 0.0          # weight on the Mahalanobis term; 0 is appearance only
+
+appearance:
+  encoder: histogram        # histogram or reid
+  reid_model: models/reid_edgetrack.onnx

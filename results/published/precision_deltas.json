@@ -1,0 +1,58 @@
+{
+  "baseline": "yolov8n_edgetrack_fp32.onnx",
+  "split": "test",
+  "variants": {
+    "yolov8n_edgetrack_fp16": {
+      "precision": "fp16",
+      "map50_drop": 0.0,
+      "map50_95_drop": 0.00344,
+      "precision_drop": 0.00011,
+      "recall_drop": -0.00012,
+      "per_class_map50_95_drop": {
+        "person": 0.0004,
+        "forklift": -1e-05,
+        "pallet": 0.0052,
+        "cone": 0.00816
+      }
+    },
+    "yolov8n_edgetrack_int8": {
+      "precision": "int8",
+      "map50_drop": 0.00267,
+      "map50_95_drop": 0.01005,
+      "precision_drop": -0.00407,
+      "recall_drop": 0.0059,
+      "per_class_map50_95_drop": {
+        "person": 0.00296,
+        "forklift": 0.00766,
+        "pallet": 0.01047,
+        "cone": 0.01911
+      }
+    },
+    "yolov8n_edgetrack_int8_allconv": {
+      "precision": "int8",
+      "map50_drop": 0.00293,
+      "map50_95_drop": 0.04564,
+      "precision_drop": -0.00205,
+      "recall_drop": 0.00553,
+      "per_class_map50_95_drop": {
+        "person": 0.0444,
+        "forklift": 0.03422,
+        "pallet": 0.03561,
+        "cone": 0.06831
+      }
+    },
+    "yolov8n_edgetrack_int8_allops": {
+      "precision": "int8",
+      "map50_drop": 0.9727,
+      "map50_95_drop": 0.86495,
+      "precision_drop": 0.95974,
+      "recall_drop": 0.95456,
+      "per_class_map50_95_drop": {
+        "person": 0.9305,
+        "forklift": 0.90837,
+        "pallet": 0.83831,
+        "cone": 0.78261
+      }
+    }
+  }
+}

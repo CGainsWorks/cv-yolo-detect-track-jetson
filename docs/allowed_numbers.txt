@@ -1,0 +1,55 @@
+# Numbers that legitimately appear in the documentation without being a
+# measurement.  Everything not listed here must be traceable to a JSON file in
+# results/published/; scripts/check_docs.py enforces that.
+#
+# One entry per line, with the reason.  If you are adding a line because a
+# result stopped matching, that is the wrong fix.
+
+# --- versions and identifiers ---
+3.10        # minimum supported Python
+3.12        # the Python the published results were produced with
+8.5         # TensorRT version shipped with Jetpack 5
+8.6         # TensorRT version shipped with Jetpack 6.0
+10.3        # TensorRT version shipped with Jetpack 6.1
+5.1         # Jetpack 5.1.x
+6.0         # Jetpack 6.0
+6.1         # Jetpack 6.1
+4.1         # vision_msgs series on Humble
+12.6        # the CUDA version the torch wheel is built against
+1.29        # the onnxruntime version in use
+2.0         # the NumPy major version that removed np.asfarray
+1.4         # the py-motmetrics version
+
+# --- thresholds and configuration, all also in configs/ ---
+0.5         # IoU threshold for MOT matching, and the DeepSORT cosine gate
+0.35        # minimum visibility for a detection label
+0.25        # detector confidence threshold at deployment
+0.001       # confidence floor for the mAP integration
+0.6         # DeepSORT max_iou_distance, and NMS IoU threshold
+0.7         # ByteTrack match_thresh
+0.3         # HSV saturation and value augmentation limit
+0.005       # HSV hue augmentation limit
+0.2         # the DeepSORT paper's default cosine gate
+0.15        # visibility below which a box is treated as fully hidden
+0.55        # blur scale on the train and val splits
+0.85        # blur scale on the test split
+0.01        # initial learning rate
+0.68        # rounded within-identity 95th percentile, quoted in prose
+
+# --- sizes stated in megabytes, derived from the byte counts in the JSON ---
+12.20       # FP32 ONNX
+6.14        # FP16 ONNX
+3.40        # INT8 ONNX, head in float
+3.38        # INT8 ONNX, all convolutions
+3.41        # INT8 ONNX, all operators
+0.46        # re-ID ONNX
+4.9         # YOLOv8n GFLOPs, from the Ultralytics model summary
+1.2         # parameter count in millions of the discarded larger re-ID network
+0.1         # parameter count in millions of the shipped re-ID network
+0.5         # GFLOPs per crop of the discarded larger re-ID network
+15.6        # rounded end-to-end p50 quoted in prose
+11          # annotated image topic bandwidth, MB/s
+
+# --- section numbering and ordinary prose arithmetic ---
+1.0         # a ratio of one
+2.0         # not a measurement

@@ -1,0 +1,83 @@
+{
+  "int8": {
+    "path": "models/yolov8n_edgetrack_int8.onnx",
+    "bytes": 3401298,
+    "sha256": "377bf110ed3c89bf092785d6c53d6d1967ea8c65ca258b3fa8964a7349aa06e9",
+    "fp32_bytes": 12200294,
+    "size_ratio": 0.2788,
+    "calibration_split": "train",
+    "calibration_pool": 1440,
+    "op_types_to_quantize": [
+      "Conv"
+    ],
+    "nodes_excluded": [
+      "/model.22/cv2.0/cv2.0.2/Conv",
+      "/model.22/cv2.1/cv2.1.2/Conv",
+      "/model.22/cv2.2/cv2.2.2/Conv",
+      "/model.22/cv3.0/cv3.0.2/Conv",
+      "/model.22/cv3.1/cv3.1.2/Conv",
+      "/model.22/cv3.2/cv3.2.2/Conv",
+      "/model.22/dfl/conv/Conv"
+    ],
+    "per_channel": true,
+    "quant_format": "QDQ",
+    "calibrate_method": "MinMax",
+    "qdq_nodes": 332,
+    "output_shape": [
+      1,
+      8,
+      5040
+    ]
+  },
+  "int8_allconv": {
+    "path": "models/yolov8n_edgetrack_int8_allconv.onnx",
+    "bytes": 3378975,
+    "sha256": "0a519cab62c275da99205b02ca57f1cadf2e1cb0564b3ae1e88b6a4e81416090",
+    "fp32_bytes": 12200294,
+    "size_ratio": 0.277,
+    "calibration_split": "train",
+    "calibration_pool": 1440,
+    "op_types_to_quantize": [
+      "Conv"
+    ],
+    "nodes_excluded": [],
+    "per_channel": true,
+    "quant_format": "QDQ",
+    "calibrate_method": "MinMax",
+    "qdq_nodes": 373,
+    "output_shape": [
+      1,
+      8,
+      5040
+    ]
+  },
+  "int8_allops": {
+    "path": "models/yolov8n_edgetrack_int8_allops.onnx",
+    "bytes": 3406941,
+    "sha256": "4f1d80efcd7025ee1a3018333f7eaf85a63744c379e0840769377228b85ff062",
+    "fp32_bytes": 12200294,
+    "size_ratio": 0.2793,
+    "calibration_split": "train",
+    "calibration_pool": 1440,
+    "op_types_to_quantize": "all",
+    "nodes_excluded": [],
+    "per_channel": true,
+    "quant_format": "QDQ",
+    "calibrate_method": "MinMax",
+    "qdq_nodes": 609,
+    "output_shape": [
+      1,
+      8,
+      5040
+    ]
+  },
+  "head_output_nodes": [
+    "/model.22/cv2.0/cv2.0.2/Conv",
+    "/model.22/cv2.1/cv2.1.2/Conv",
+    "/model.22/cv2.2/cv2.2.2/Conv",
+    "/model.22/cv3.0/cv3.0.2/Conv",
+    "/model.22/cv3.1/cv3.1.2/Conv",
+    "/model.22/cv3.2/cv3.2.2/Conv",
+    "/model.22/dfl/conv/Conv"
+  ]
+}

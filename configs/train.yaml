@@ -1,0 +1,40 @@
+# Fine-tuning schedule.  Read by scripts/train.py and passed straight through
+# to ultralytics, so every key here is an Ultralytics training argument.
+
+model: yolov8n.pt
+device: 0
+
+train:
+  epochs: 60
+  batch: 32
+  imgsz: 640
+  workers: 4
+  seed: 0
+  deterministic: true
+  patience: 20
+  optimizer: auto
+  lr0: 0.01
+  lrf: 0.01
+  cos_lr: true
+  warmup_epochs: 3
+  close_mosaic: 10
+  val: true
+  plots: true
+  cache: false
+
+  # Augmentation.  Colour jitter is turned down hard on purpose: instance
+  # colour is the only appearance cue DeepSORT has on this dataset, and an
+  # aggressive HSV augmentation teaches the detector to ignore exactly the
+  # signal the tracker depends on.  Geometric augmentation is left alone.
+  hsv_h: 0.005
+  hsv_s: 0.3
+  hsv_v: 0.3
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.4
+  shear: 0.0
+  perspective: 0.0
+  flipud: 0.0
+  fliplr: 0.5
+  mosaic: 1.0
+  mixup: 0.0

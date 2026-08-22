@@ -1,0 +1,16 @@
+# Training and export only.  Never installed in the runtime image.
+#
+# ultralytics is AGPL-3.0.  It is used to fine-tune YOLOv8 and to export the
+# ONNX graphs, and nothing it produces is itself AGPL: the weights are the
+# output of running the program, not a derivative of its source.  The runtime
+# never imports it.  docs/licences.md carries the full argument.
+
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+torch>=2.4
+torchvision>=0.19
+ultralytics>=8.3,<9
+onnx>=1.16
+onnxslim>=0.1                    # ultralytics uses this for --simplify
+onnxconverter-common>=1.14
+matplotlib>=3.8                  # ultralytics writes training plots
