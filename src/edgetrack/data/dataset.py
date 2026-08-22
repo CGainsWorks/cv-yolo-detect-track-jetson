@@ -31,7 +31,7 @@ from typing import Iterable
 import cv2
 import numpy as np
 
-from ..paths import serialise_path
+from ..paths import serialise_path, write_text_lf
 from .synth import CLASSES, Annotation, SynthConfig, generate_sequence
 
 __all__ = [
@@ -147,7 +147,7 @@ def write_split(
                             round(ann.visibility, 4),
                         )
                     )
-            (label_dir / f"{stem}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            write_text_lf(label_dir / f"{stem}.txt", "\n".join(lines) + "\n")
             stats.n_images += 1
         stats.n_sequences += 1
         if write_mot:
@@ -158,7 +158,8 @@ def write_split(
 def write_mot_sequence(seq_dir: Path, cfg: SynthConfig, rows: list[tuple]) -> None:
     """Write ``seqinfo.ini`` and ``gt/gt.txt`` for one sequence."""
     (seq_dir / "gt").mkdir(parents=True, exist_ok=True)
-    (seq_dir / "seqinfo.ini").write_text(
+    write_text_lf(
+        seq_dir / "seqinfo.ini",
         "\n".join(
             [
                 "[Sequence]",
@@ -172,9 +173,12 @@ def write_mot_sequence(seq_dir: Path, cfg: SynthConfig, rows: list[tuple]) -> No
                 "",
             ]
         ),
-        encoding="utf-8",
     )
-    with (seq_dir / "gt" / "gt.txt").open("w", encoding="utf-8") as handle:
+    # newline is pinned here for the same reason write_text_lf exists: a MOT
+    # ground-truth file written with CRLF is still parseable, but the digest
+    # comparison in tests/test_determinism.py would then depend on the platform
+    # that generated it.
+    with (seq_dir / "gt" / "gt.txt").open("w", newline="\n", encoding="utf-8") as handle:
         for row in sorted(rows, key=lambda r: (r[0], r[1])):
             handle.write(
                 "{},{},{:.2f},{:.2f},{:.2f},{:.2f},{},{},{}\n".format(*row)
@@ -245,4 +249,4 @@ def dataset_summary(root: Path, splits: dict[str, SplitStats], seeds: dict[str, 
 
 def write_dataset_json(root: Path, summary: dict) -> None:
     root.mkdir(parents=True, exist_ok=True)
-    (root / "dataset.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    write_text_lf((root / "dataset.json"), json.dumps(summary, indent=2) + "\n")

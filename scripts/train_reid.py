@@ -35,7 +35,7 @@ import numpy as np
 
 import _bootstrap  # noqa: F401
 from edgetrack.data.synth import config_for_split, generate_sequence
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 from edgetrack.track.appearance import CROP_SIZE
 
 
@@ -263,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
         "history": history,
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(args.report, json.dumps(report, indent=2) + "\n")
     print(json.dumps({k: v for k, v in report.items() if k != "history"}, indent=2))
     return 0
 

@@ -20,6 +20,9 @@ PUBLISHED = ROOT / "results" / "published"
 
 PATH_KEYS = ("model", "model_path", "weights", "onnx", "path", "engine", "root",
              "video", "gif", "baseline", "run_dir")
+# Spelled this way rather than as an escape so that an editor or a shell
+# rewriting line endings in this file cannot change what the test looks for.
+CARRIAGE_RETURN = bytes([13])
 DRIVE_LETTER = re.compile(r"^[A-Za-z]:[\\/]")
 
 
@@ -147,3 +150,27 @@ def test_serialise_path_is_repo_relative_and_posix():
     assert serialise_path(None) is None
     # A path outside the repository keeps its form but not its separators.
     assert "\\" not in (serialise_path(Path("/somewhere/else/a.onnx")) or "")
+
+
+def test_generated_artefacts_use_lf_endings():
+    """Committed generated files must be LF whatever platform wrote them.
+
+    CI regenerates benchmarks/results.csv, the tables under docs/tables/ and
+    the derived JSON, then diffs them against the committed copies.  Git
+    normalises the committed blob to LF, so a generator that emits CRLF on
+    Windows produces a diff in which every line differs and every line is
+    identical.  csv.writer defaults to CRLF and Path.write_text follows the
+    platform, which is why edgetrack.paths.write_text_lf exists.
+    """
+    generated = [
+        ROOT / "benchmarks" / "results.csv",
+        *sorted((ROOT / "docs" / "tables").glob("*.md")),
+        *sorted((ROOT / "results" / "published").glob("*.json")),
+    ]
+    assert len(generated) > 10, "the artefact list looks truncated"
+    offenders = [
+        path.relative_to(ROOT).as_posix()
+        for path in generated
+        if path.exists() and CARRIAGE_RETURN in path.read_bytes()
+    ]
+    assert not offenders, f"carriage returns in {offenders}"

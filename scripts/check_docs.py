@@ -31,6 +31,7 @@ import sys
 from pathlib import Path
 
 import _bootstrap  # noqa: F401
+from edgetrack.paths import write_text_lf
 
 BLOCK = re.compile(
     r"<!-- BEGIN generated:(?P<name>[\w.-]+) -->\n(?P<body>.*?)<!-- END generated:(?P=name) -->",
@@ -115,7 +116,7 @@ def check_blocks(path: Path, table_dir: Path, fix: bool) -> list[str]:
                     "`python scripts/check_docs.py --fix-blocks`"
                 )
     if fix and replaced != text:
-        path.write_text(replaced, encoding="utf-8")
+        write_text_lf(path, replaced)
     return problems
 
 

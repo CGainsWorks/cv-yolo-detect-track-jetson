@@ -45,6 +45,7 @@ import numpy as np
 import yaml
 
 import _bootstrap  # noqa: F401
+from edgetrack.paths import write_text_lf
 from edgetrack.data.synth import CLASSES
 from edgetrack.detect import DetectorConfig, build_detector
 from edgetrack.pipeline import Pipeline
@@ -248,7 +249,7 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(args.out, json.dumps(report, indent=2) + "\n")
     if not args.quiet:
         print(f"wrote {args.out} ({report['host']['device_class']})")
     return 0

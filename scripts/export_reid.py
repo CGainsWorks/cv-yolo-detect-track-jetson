@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 import _bootstrap  # noqa: F401
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from export_onnx import sha256  # noqa: E402
@@ -122,9 +122,7 @@ def main(argv: list[str] | None = None) -> int:
         "max_abs_error_vs_torch": error,
         "dynamic_batch_checked_at": 7,
     }
-    args.out.with_suffix(".json").write_text(
-        json.dumps(record, indent=2) + "\n", encoding="utf-8"
-    )
+    write_text_lf(args.out.with_suffix(".json"), json.dumps(record, indent=2) + "\n")
     print(json.dumps(record, indent=2))
     return 0
 

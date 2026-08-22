@@ -36,7 +36,7 @@ from edgetrack.data.dataset import read_mot_gt
 from edgetrack.data.synth import CLASSES
 from edgetrack.detect import DetectorConfig, build_detector
 from edgetrack.metrics.mot import evaluate_mot, id_measures_from_counts
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 from edgetrack.track import build_tracker
 from edgetrack.track.appearance import attach_features, build_encoder
 
@@ -212,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     out = args.out or Path(f"results/tuning_{args.tracker}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(report, indent=2) + "\n")
 
     if not args.quiet:
         print(f"best  IDF1 {results[0]['idf1']:.4f}  {json.dumps(results[0]['params'])}")

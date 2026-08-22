@@ -44,7 +44,7 @@ import yaml
 
 import _bootstrap  # noqa: F401
 from edgetrack.detect.base import letterbox
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 
 _MISSING = (
     "tensorrt is not importable.  On a Jetson it comes with Jetpack and is "
@@ -246,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.report.exists():
         existing = json.loads(args.report.read_text(encoding="utf-8"))
     existing[args.precision] = record
-    args.report.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(args.report, json.dumps(existing, indent=2) + "\n")
     print(json.dumps(record, indent=2))
     return 0
 

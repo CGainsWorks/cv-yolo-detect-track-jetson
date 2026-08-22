@@ -66,7 +66,7 @@ import yaml
 
 import _bootstrap  # noqa: F401
 from edgetrack.detect.base import letterbox
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from export_onnx import sha256  # noqa: E402
@@ -278,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
     existing = json.loads(out.read_text(encoding="utf-8")) if out.exists() else {}
     existing.update(records)
     existing["head_output_nodes"] = head
-    out.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(existing, indent=2) + "\n")
     print(json.dumps(records, indent=2))
     return 0
 

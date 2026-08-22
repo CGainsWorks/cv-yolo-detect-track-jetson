@@ -28,7 +28,7 @@ from edgetrack.data.synth import CLASSES, config_for_split, generate_sequence
 from edgetrack.detect import DetectorConfig, build_detector
 from edgetrack.metrics.idswitch import attribute_switches
 from edgetrack.metrics.mot import evaluate_mot
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 from edgetrack.pipeline import Pipeline, annotate
 from edgetrack.track import build_tracker
 from edgetrack.track.appearance import build_encoder
@@ -184,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
         report["switch_causes"] = analysis.counts
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(args.out, json.dumps(report, indent=2) + "\n")
 
     if not args.quiet:
         print(f"{source.description}")

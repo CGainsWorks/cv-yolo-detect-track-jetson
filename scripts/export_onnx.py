@@ -44,7 +44,7 @@ import numpy as np
 import yaml
 
 import _bootstrap  # noqa: F401
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 
 
 def sha256(path: Path) -> str:
@@ -143,9 +143,7 @@ def main(argv: list[str] | None = None) -> int:
         "precision": args.precision,
         **checks,
     }
-    destination.with_suffix(".json").write_text(
-        json.dumps(record, indent=2) + "\n", encoding="utf-8"
-    )
+    write_text_lf(destination.with_suffix(".json"), json.dumps(record, indent=2) + "\n")
     print(json.dumps(record, indent=2))
     return 0
 

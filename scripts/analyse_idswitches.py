@@ -19,7 +19,7 @@ from pathlib import Path
 
 import _bootstrap  # noqa: F401
 from edgetrack.metrics.idswitch import CAUSES
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 
 
 def table(trackers: dict) -> str:
@@ -100,9 +100,9 @@ def main(argv: list[str] | None = None) -> int:
         ]
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(markdown, encoding="utf-8")
+    write_text_lf(args.out, markdown)
     args.json_out.parent.mkdir(parents=True, exist_ok=True)
-    args.json_out.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(args.json_out, json.dumps(summary, indent=2) + "\n")
 
     if not args.quiet:
         print(markdown)

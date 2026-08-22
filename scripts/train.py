@@ -28,7 +28,7 @@ import yaml
 
 import _bootstrap  # noqa: F401
 from edgetrack.data.synth import CLASSES
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 
 
 def load_config(path: Path) -> dict:
@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         },
     }
     out_json = Path(args.out) / f"{args.name}_train.json"
-    out_json.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(out_json, json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
     return 0
 

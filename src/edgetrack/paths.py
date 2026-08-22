@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 from pathlib import Path, PurePosixPath
 
-__all__ = ["serialise_path", "path_name", "REPO_ROOT"]
+__all__ = ["serialise_path", "path_name", "write_text_lf", "REPO_ROOT"]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -51,3 +51,16 @@ def path_name(value: str) -> str:
     to prevent.
     """
     return PurePosixPath(value).name
+
+
+def write_text_lf(path: str | os.PathLike[str], text: str) -> None:
+    """Write text with LF endings whatever the platform.
+
+    ``Path.write_text`` translates newlines to the platform default, so a file
+    generated on Windows comes out CRLF.  ``.gitattributes`` normalises the
+    committed copy to LF, CI regenerates it on Linux and diffs the two, and the
+    result is a diff in which every line differs and every line is identical.
+    Every script that writes a committed artefact goes through here.
+    """
+    with open(path, "w", encoding="utf-8", newline=chr(10)) as handle:
+        handle.write(text)

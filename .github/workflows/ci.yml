@@ -202,17 +202,34 @@ jobs:
             --precision fp32 --out /tmp/rebuilt_fp32.onnx
           python - <<'PY'
           import json
-          from pathlib import Path
+
           rebuilt = json.load(open("/tmp/rebuilt_fp32.json"))
-          published = json.load(open("models/yolov8n_edgetrack_fp32.json"))
-          print("rebuilt", rebuilt["sha256"])
-          print("published", published["sha256"])
-          # Byte equality is not expected across torch and onnx versions.  What
-          # must hold is that the graph the exporter produces has the same
-          # shape and the same opset as the one the results came from.
-          assert rebuilt["output_shape"] == published["output_shape"]
-          assert rebuilt["opset"] == published["opset"]
-          assert rebuilt["imgsz_wh"] == published["imgsz_wh"]
+          manifest = json.load(open("models/MANIFEST.json"))
+          published = next(
+              a for a in manifest["artefacts"]
+              if a["name"] == "yolov8n_edgetrack_fp32.onnx"
+          )
+          print("rebuilt  ", rebuilt["sha256"], rebuilt["bytes"], "bytes")
+          print("published", published["sha256"], published["bytes"], "bytes")
+
+          # The manifest is the comparison, not the per-artefact sidecar JSON:
+          # sidecars are written next to the export and are not release assets,
+          # so on a machine that fetched the weights they do not exist.
+          #
+          # Byte equality is not expected across torch and onnx versions, so it
+          # is reported rather than asserted.  What must hold is that the
+          # exporter still produces the same graph shape at the same opset for
+          # the same input size, because that is what the published numbers
+          # were measured on.
+          assert rebuilt["opset"] == 13, rebuilt["opset"]
+          assert rebuilt["imgsz_wh"] == [640, 384], rebuilt["imgsz_wh"]
+          assert rebuilt["output_shape"] == [1, 8, 5040], rebuilt["output_shape"]
+          assert rebuilt["input_dtype"] == "tensor(float)", rebuilt["input_dtype"]
+          if rebuilt["sha256"] == published["sha256"]:
+              print("bit-identical to the published artefact")
+          else:
+              print("differs from the published artefact, which is expected "
+                    "when torch or onnx move")
           PY
 
       - name: INT8 quantisation still produces a working model

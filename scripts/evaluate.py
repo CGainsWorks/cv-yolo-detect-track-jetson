@@ -33,7 +33,7 @@ from edgetrack.data.dataset import load_yolo_labels
 from edgetrack.data.synth import CLASSES
 from edgetrack.detect import DetectorConfig, build_detector
 from edgetrack.metrics.detection import DetectionSample, evaluate_detections
-from edgetrack.paths import serialise_path
+from edgetrack.paths import serialise_path, write_text_lf
 
 
 def collect_samples(
@@ -151,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(args.out, json.dumps(report, indent=2) + "\n")
     if not args.quiet:
         print(f"wrote {args.out}")
     return 0

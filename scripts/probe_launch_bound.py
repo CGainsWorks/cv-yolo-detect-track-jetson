@@ -46,6 +46,7 @@ from pathlib import Path
 import numpy as np
 
 import _bootstrap  # noqa: F401
+from edgetrack.paths import write_text_lf
 
 
 def bench(model, tensor, torch, iterations: int, warmup: int) -> dict:
@@ -158,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     print("\nverdict:", json.dumps(report["verdict"], indent=2))
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    write_text_lf(args.out, json.dumps(report, indent=2) + "\n")
     print(f"wrote {args.out}")
     return 0
 
