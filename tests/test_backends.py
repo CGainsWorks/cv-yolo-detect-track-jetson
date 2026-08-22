@@ -218,3 +218,49 @@ def test_map_matches_the_ultralytics_validator():
         f"{fp32['map50_95']:.4f}"
     )
     assert float(metrics.box.map50) == pytest.approx(fp32["map50"], abs=0.05)
+
+
+def test_precision_detection_needs_no_onnx_package():
+    """The INT8 label must not depend on an optional dependency.
+    ``onnx`` is in requirements-train.txt and deliberately absent from the
+    runtime.  An earlier version read the graph through it and silently
+    reported INT8 models as FP32 wherever it was missing, which is exactly
+    the deployed configuration, and CI caught it only once the weights
+    started downloading.  This runs the check in an interpreter where
+    importing onnx raises, which is what ``sys.modules[name] = None`` does.
+    """
+    require(INT8)
+    require(FP32)
+    import subprocess
+    import sys as _sys
+    script = (
+        "import sys\n"
+        "sys.path.insert(0, r'{src}')\n"
+        "sys.modules['onnx'] = None\n"
+        "try:\n"
+        "    import onnx\n"
+        "except ImportError:\n"
+        "    pass\n"
+        "else:\n"
+        "    raise SystemExit('onnx was importable')\n"
+        "from edgetrack.detect.onnx_backend import _has_quantisation_nodes\n"
+        "print(_has_quantisation_nodes(r'{int8}'), "
+        "_has_quantisation_nodes(r'{fp32}'))\n"
+    ).format(src=ROOT / "src", int8=INT8, fp32=FP32)
+    result = subprocess.run(
+        [_sys.executable, "-c", script], capture_output=True, text=True, timeout=180
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "True False", result.stdout
+
+
+def test_quantisation_scan_finds_a_marker_across_a_chunk_boundary(tmp_path):
+    """The chunked read must not miss an operator name split across blocks."""
+    from edgetrack.detect.onnx_backend import _has_quantisation_nodes
+    path = tmp_path / "spliced.bin"
+    path.write_bytes(b"\x00" * 10 + b"QuantizeLinear" + b"\x00" * 10)
+    assert _has_quantisation_nodes(path, chunk=12)
+    assert _has_quantisation_nodes(path, chunk=1)
+    plain = tmp_path / "plain.bin"
+    plain.write_bytes(b"\x00" * 4096)
+    assert not _has_quantisation_nodes(plain, chunk=7)

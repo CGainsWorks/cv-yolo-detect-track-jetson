@@ -31,6 +31,39 @@ _DTYPES = {
     "tensor(uint8)": np.uint8,
 }
 
+# Operator names that only appear in a quantised graph.  A protobuf stores
+# op_type as a plain string, so scanning the bytes finds them without parsing.
+_QUANT_MARKERS = (b"QuantizeLinear", b"DequantizeLinear")
+
+
+def _has_quantisation_nodes(path: Path, chunk: int = 1 << 20) -> bool:
+    """Whether the graph contains QDQ operators, without importing ``onnx``.
+
+    The obvious implementation is ``onnx.load(path).graph.node``, and that is
+    what this did first.  It was wrong in a way that only showed up in CI: the
+    ``onnx`` package is in ``requirements-train.txt`` and deliberately not in
+    the runtime, so on any machine that had only installed the runtime the
+    import failed, the check fell back to the input dtype and an INT8 model
+    reported itself as FP32.  A results table labelled by a value that depends
+    on which optional packages happen to be installed is worse than no label.
+
+    Scanning the serialised protobuf for the operator names is crude and it is
+    dependency-free, deterministic and decisive: a float graph contains neither
+    string anywhere.  The overlap between chunks is the length of the longest
+    marker minus one, so a name split across a boundary is still found.
+    """
+    overlap = max(len(marker) for marker in _QUANT_MARKERS) - 1
+    tail = b""
+    with Path(path).open("rb") as handle:
+        while True:
+            block = handle.read(chunk)
+            if not block:
+                return False
+            window = tail + block
+            if any(marker in window for marker in _QUANT_MARKERS):
+                return True
+            tail = window[-overlap:]
+
 
 class OnnxDetector(Detector):
     def __init__(
@@ -83,29 +116,12 @@ class OnnxDetector(Detector):
                     f"detector is configured for {want_w}x{want_h}"
                 )
 
-        quantised = any(
-            node.op_type in ("QuantizeLinear", "DequantizeLinear")
-            for node in self._graph_ops()
-        )
         if self._input_dtype == np.float16:
             self.precision = "fp16"
-        elif quantised:
+        elif _has_quantisation_nodes(self.model_path):
             self.precision = "int8"
         else:
             self.precision = "fp32"
-
-    def _graph_ops(self) -> list:
-        """Node list, if onnx is importable.  It is not in the runtime image,
-        so absence downgrades the precision label to a guess from the dtype
-        rather than failing."""
-        try:
-            import onnx
-        except ImportError:  # pragma: no cover - runtime image path
-            return []
-        try:
-            return list(onnx.load(str(self.model_path)).graph.node)
-        except Exception:  # pragma: no cover - corrupt file surfaces at session build
-            return []
 
     def _forward(self, tensor: np.ndarray) -> np.ndarray:
         if tensor.dtype != self._input_dtype:

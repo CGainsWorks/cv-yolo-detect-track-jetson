@@ -59,30 +59,12 @@ jobs:
         run: python -m pytest tests/ -q -m "not needs_model" --durations=15
 
       - name: The dataset generator is deterministic across a fresh process
-        run: |
-          python scripts/make_dataset.py --preset tiny --root /tmp/a --quiet
-          python scripts/make_dataset.py --preset tiny --root /tmp/b --quiet
-          python - <<'PY'
-          import hashlib, json
-          from pathlib import Path
-
-          def digest(root):
-              h = hashlib.sha256()
-              for path in sorted(Path(root).rglob("*")):
-                  if path.is_file() and path.name != "dataset.json":
-                      h.update(path.relative_to(root).as_posix().encode())
-                      h.update(path.read_bytes())
-              return h.hexdigest()
-
-          a, b = digest("/tmp/a"), digest("/tmp/b")
-          print("a", a)
-          print("b", b)
-          assert a == b, "the same seeds produced different data"
-          summary = json.load(open("/tmp/a/dataset.json"))
-          for split, stats in summary["splits"].items():
-              print(split, stats["images"], "images", stats["labelled_boxes"], "boxes")
-              assert stats["images"] > 0 and stats["labelled_boxes"] > 0
-          PY
+        # tests/test_determinism.py, run explicitly because it is the claim the
+        # rest of the repository leans on and it deserves its own line in the
+        # job summary rather than being one dot among two hundred.  It also ran
+        # as a shell step here once, failed on its first run and was moved into
+        # the suite so it fails on a laptop in five seconds instead.
+        run: python -m pytest tests/test_determinism.py -v --no-header
 
       - name: Every number in the documentation comes from a published result
         run: python scripts/check_docs.py --require-results
@@ -120,11 +102,26 @@ jobs:
 
       - name: benchmarks/results.csv matches the published JSON
         run: |
+          # Everything derived is regenerated into /tmp and diffed, including
+          # the deltas, so a committed table cannot drift from the results it
+          # claims to summarise.  --deltas-out is passed explicitly because its
+          # default writes back into results/published, which would make this
+          # step rewrite the thing it is checking.
           python scripts/make_results_table.py --published results/published \
-            --csv-out /tmp/results.csv --table-dir /tmp/tables --quiet
+            --csv-out /tmp/results.csv --table-dir /tmp/tables \
+            --deltas-out /tmp/precision_deltas.json --quiet
           diff -u benchmarks/results.csv /tmp/results.csv
           diff -u docs/tables/headline.md /tmp/tables/headline.md
           diff -u docs/tables/precision_delta.md /tmp/tables/precision_delta.md
+          diff -u results/published/precision_deltas.json /tmp/precision_deltas.json
+
+      - name: The ID-switch table matches the published tracking results
+        run: |
+          python scripts/analyse_idswitches.py \
+            --tracking results/published/tracking.json \
+            --out /tmp/idswitch_table.md --json-out /tmp/idswitches.json --quiet
+          diff -u docs/tables/idswitch_table.md /tmp/idswitch_table.md
+          diff -u results/published/idswitches.json /tmp/idswitches.json
 
   detector:
     # Exports the real model and runs it.  Separate from `check` because it
