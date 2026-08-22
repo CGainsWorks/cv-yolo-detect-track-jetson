@@ -9,13 +9,23 @@
 name: edgetrack
 
 services:
+  # Weights land in /app/weights rather than /app/models: the image carries
+  # models/MANIFEST.json and a bind mount over /app/models would hide it, so
+  # the fetch would fail looking for the manifest it was about to use.
   fetch:
     build:
       context: ..
       dockerfile: docker/Dockerfile.runtime
+    environment:
+      # Needed only while the repository is private.  Unset is fine on a public
+      # one and docker compose passes an empty value through harmlessly.
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     volumes:
-      - ../models:/app/models
-    command: python scripts/fetch_model.py --out /app/models
+      - ../models:/app/weights
+    command: >
+      python scripts/fetch_model.py
+        --out /app/weights
+        --only yolov8n_edgetrack_fp32.onnx reid_edgetrack.onnx
 
   demo:
     build:
@@ -25,12 +35,12 @@ services:
       fetch:
         condition: service_completed_successfully
     volumes:
-      - ../models:/app/models:ro
+      - ../models:/app/weights:ro
       - ../results:/app/results
     command: >
       python scripts/run_demo.py
         --source synth:7
-        --model /app/models/yolov8n_edgetrack_fp32.onnx
+        --model /app/weights/yolov8n_edgetrack_fp32.onnx
         --tracker bytetrack
         --video /app/results/demo.mp4
         --out /app/results/demo.json

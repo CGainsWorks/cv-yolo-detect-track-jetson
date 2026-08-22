@@ -114,6 +114,20 @@ def main() -> int:
             if node.frame_index >= FRAMES and len(listener.tracks) >= FRAMES:
                 break
     finally:
+        # Cancel the timer before tearing anything down.  Without this the
+        # callback fires once more while destruction is in progress and rclpy
+        # reports an unretrieved "cannot use Destroyable" exception after the
+        # check has already passed, which reads like a failure and is not one.
+        # Cancel the timer and take both nodes off the executor before
+        # destroying them.  rclpy may still print "cannot use Destroyable
+        # because destruction was requested" after this: it is an unretrieved
+        # exception from a callback already in flight inside the executor, it
+        # arrives after the check has passed and the process still exits zero.
+        # Two attempts at suppressing it changed nothing, so it is documented
+        # here rather than chased, and CI is right to keep passing on it.
+        node.timer.cancel()
+        executor.remove_node(node)
+        executor.remove_node(listener)
         executor.shutdown()
         listener.destroy_node()
         node.destroy_node()

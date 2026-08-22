@@ -23,6 +23,9 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY configs/ ./configs/
 COPY models/MANIFEST.json ./models/MANIFEST.json
+# pytest.ini registers the markers, so running the suite inside the image
+# deselects needs_model cleanly instead of warning about unknown marks.
+COPY pytest.ini requirements.txt ./
 
 ENV PYTHONPATH=/app/src \
     PYTHONUNBUFFERED=1

@@ -9,6 +9,9 @@ data/processed
 data/raw
 datasets
 models
+# ...except the manifest, which is how the image knows where the weights
+# live and what their digests are.  scripts/fetch_model.py needs it.
+!models/MANIFEST.json
 results
 runs
 notebooks

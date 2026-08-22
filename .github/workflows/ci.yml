@@ -320,20 +320,30 @@ jobs:
 
       - name: The tests pass inside the image
         run: |
-          docker run --rm -v "$PWD/tests:/app/tests" edgetrack:ci \
-            python -m pytest /app/tests -q -m "not needs_model"
+          # results/ is mounted because tests/test_published_results.py checks
+          # the committed numbers, which are repository state rather than image
+          # state.  Everything else the suite needs is in the image already.
+          docker run --rm \
+            -v "$PWD/tests:/app/tests" \
+            -v "$PWD/results:/app/results:ro" \
+            edgetrack:ci python -m pytest /app/tests -q -m "not needs_model"
 
       - name: The demo runs inside the image
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p results models
-          docker run --rm -v "$PWD/models:/app/models" edgetrack:ci \
-            python scripts/fetch_model.py --out /app/models
-          docker run --rm -v "$PWD/models:/app/models:ro" \
+          mkdir -p results weights
+          # Weights land in /app/weights rather than /app/models.  The image
+          # carries models/MANIFEST.json and a bind mount over /app/models
+          # would hide it, so the fetch would fail looking for the manifest it
+          # was about to use.
+          docker run --rm -e GITHUB_TOKEN -v "$PWD/weights:/app/weights" edgetrack:ci \
+            python scripts/fetch_model.py --out /app/weights \
+              --only yolov8n_edgetrack_fp32.onnx
+          docker run --rm -v "$PWD/weights:/app/weights:ro" \
             -v "$PWD/results:/app/results" edgetrack:ci \
             python scripts/run_demo.py --source synth:11 --frames 40 \
-              --model /app/models/yolov8n_edgetrack_fp32.onnx \
+              --model /app/weights/yolov8n_edgetrack_fp32.onnx \
               --out /app/results/docker_demo.json --quiet
           python3 - <<'PY'
           import json

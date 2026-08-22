@@ -1,0 +1,71 @@
+{
+  "release": "v0.1.0",
+  "repository": "CGainsWorks/cv-yolo-detect-track-jetson",
+  "note": "Downloads go through the API asset endpoint rather than the browser URL, because that is the one that works on a private repository with a token in GITHUB_TOKEN. On a public repository neither needs authentication. scripts/fetch_model.py verifies every digest and refuses a mismatch.",
+  "artefacts": [
+    {
+      "name": "reid_edgetrack.onnx",
+      "description": "appearance embedding, 128 dimensions, dynamic batch",
+      "required_for_demo": true,
+      "bytes": 461063,
+      "sha256": "d239821eac1ebf5592fe4354b0bb2cf412289fac906f64406b1bb84be66f4e7a",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838994"
+    },
+    {
+      "name": "reid_edgetrack.pt",
+      "description": "appearance embedding checkpoint",
+      "required_for_demo": false,
+      "bytes": 663245,
+      "sha256": "790ecfdd5199ce67bf95dd395c3e11a4fef016c62c087291d4470ccb421a698c",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524839000"
+    },
+    {
+      "name": "yolov8n_edgetrack.pt",
+      "description": "fine-tuned checkpoint; needed to re-export or to run the PyTorch backend",
+      "required_for_demo": false,
+      "bytes": 6231274,
+      "sha256": "29a724c51edd6fc62fd332847fd0fefb5c4260315f3ed96e01add47b5979cf75",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838949"
+    },
+    {
+      "name": "yolov8n_edgetrack_fp16.onnx",
+      "description": "half precision, exported from a half module rather than converted",
+      "required_for_demo": false,
+      "bytes": 6137002,
+      "sha256": "33d6d611f7b39835962a24bbdc6fc500f2363df99c053d1353a3fb23c02c723e",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838968"
+    },
+    {
+      "name": "yolov8n_edgetrack_fp32.onnx",
+      "description": "reference graph, opset 13, fixed 640x384 input",
+      "required_for_demo": true,
+      "bytes": 12200294,
+      "sha256": "533f59401fdaa7a7b4cc8b1d81ee4b5686398c22ee83bac66f9dc62b011017bb",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838962"
+    },
+    {
+      "name": "yolov8n_edgetrack_int8.onnx",
+      "description": "static QDQ, convolutions only, detection head left in float",
+      "required_for_demo": false,
+      "bytes": 3401298,
+      "sha256": "377bf110ed3c89bf092785d6c53d6d1967ea8c65ca258b3fa8964a7349aa06e9",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838974"
+    },
+    {
+      "name": "yolov8n_edgetrack_int8_allconv.onnx",
+      "description": "as int8 with the head quantised too; ablation",
+      "required_for_demo": false,
+      "bytes": 3378975,
+      "sha256": "0a519cab62c275da99205b02ca57f1cadf2e1cb0564b3ae1e88b6a4e81416090",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838979"
+    },
+    {
+      "name": "yolov8n_edgetrack_int8_allops.onnx",
+      "description": "ONNX Runtime defaults; scores 0.0 mAP and is published so the failure reproduces",
+      "required_for_demo": false,
+      "bytes": 3406941,
+      "sha256": "4f1d80efcd7025ee1a3018333f7eaf85a63744c379e0840769377228b85ff062",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838984"
+    }
+  ]
+}

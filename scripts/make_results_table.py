@@ -67,8 +67,25 @@ def accuracy_by_model(detection: dict) -> dict[str, dict]:
     return out
 
 
-def build_rows(detection: dict, latency: dict) -> list[dict]:
+def artefact_sizes(manifest_path: Path) -> dict[str, int]:
+    """Byte counts from the committed manifest, not from the filesystem.
+
+    The table used to call ``Path(...).stat()`` on each model file, which works
+    on the machine that produced the results and returns nothing on a CI runner
+    where ``models/`` is empty.  The regenerated CSV then differed from the
+    committed one in a column nobody was looking at, and the diff step failed
+    with no hint as to why.  The manifest is committed, digest-verified and
+    present everywhere, so it is the right source.
+    """
+    if not manifest_path.exists():
+        return {}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    return {entry["name"]: int(entry["bytes"]) for entry in manifest["artefacts"]}
+
+
+def build_rows(detection: dict, latency: dict, sizes: dict[str, int] | None = None) -> list[dict]:
     accuracy = accuracy_by_model(detection)
+    sizes = sizes or {}
     device = latency["host"]["device_class"]
     rows = []
     for entry in latency["results"]:
@@ -88,9 +105,7 @@ def build_rows(detection: dict, latency: dict) -> list[dict]:
                 "inference_p95_ms": entry["stages_ms"]["inference"]["p95"],
                 "end_to_end_p50_ms": entry["end_to_end_ms"]["p50"],
                 "fps_end_to_end": entry["fps_end_to_end"],
-                "model_bytes": Path(entry["model_path"]).stat().st_size
-                if Path(entry["model_path"]).exists()
-                else "",
+                "model_bytes": sizes.get(path_name(entry["model_path"]), ""),
             }
         )
     return rows
@@ -217,6 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--table-dir", default="docs/tables", type=Path)
     parser.add_argument("--deltas-out", default="results/published/precision_deltas.json",
                         type=Path)
+    parser.add_argument("--manifest", default="models/MANIFEST.json", type=Path)
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args(argv)
 
@@ -227,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
     args.deltas_out.parent.mkdir(parents=True, exist_ok=True)
     args.deltas_out.write_text(json.dumps(deltas, indent=2) + "\n", encoding="utf-8")
 
-    rows = build_rows(detection, latency)
+    rows = build_rows(detection, latency, artefact_sizes(args.manifest))
     args.csv_out.parent.mkdir(parents=True, exist_ok=True)
     with args.csv_out.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=COLUMNS)
