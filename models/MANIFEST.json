@@ -9,7 +9,7 @@
       "required_for_demo": true,
       "bytes": 461063,
       "sha256": "d239821eac1ebf5592fe4354b0bb2cf412289fac906f64406b1bb84be66f4e7a",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838994"
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337352"
     },
     {
       "name": "reid_edgetrack.pt",
@@ -17,55 +17,55 @@
       "required_for_demo": false,
       "bytes": 663245,
       "sha256": "790ecfdd5199ce67bf95dd395c3e11a4fef016c62c087291d4470ccb421a698c",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524839000"
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337339"
     },
     {
       "name": "yolov8n_edgetrack.pt",
       "description": "fine-tuned checkpoint; needed to re-export or to run the PyTorch backend",
       "required_for_demo": false,
-      "bytes": 6231274,
-      "sha256": "29a724c51edd6fc62fd332847fd0fefb5c4260315f3ed96e01add47b5979cf75",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838949"
+      "bytes": 6218969,
+      "sha256": "319beb48e973e9a3156cf1db76f478b8d61f507bb6bb884bc37116251bef9b80",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337346"
     },
     {
       "name": "yolov8n_edgetrack_fp16.onnx",
       "description": "half precision, exported from a half module rather than converted",
       "required_for_demo": false,
-      "bytes": 6137002,
-      "sha256": "33d6d611f7b39835962a24bbdc6fc500f2363df99c053d1353a3fb23c02c723e",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838968"
+      "bytes": 6136948,
+      "sha256": "3233f8b5d02e45ee766c202d8fc4bb1b7b2886f16b74201a39d97346c5d89f3a",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337351"
     },
     {
       "name": "yolov8n_edgetrack_fp32.onnx",
       "description": "reference graph, opset 13, fixed 640x384 input",
       "required_for_demo": true,
-      "bytes": 12200294,
-      "sha256": "533f59401fdaa7a7b4cc8b1d81ee4b5686398c22ee83bac66f9dc62b011017bb",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838962"
+      "bytes": 12200240,
+      "sha256": "d1a4ed378a9576d8d0ada7204ff98bccf184968d851237131140e292bb30849e",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337344"
     },
     {
       "name": "yolov8n_edgetrack_int8.onnx",
       "description": "static QDQ, convolutions only, detection head left in float",
       "required_for_demo": false,
-      "bytes": 3401298,
-      "sha256": "377bf110ed3c89bf092785d6c53d6d1967ea8c65ca258b3fa8964a7349aa06e9",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838974"
+      "bytes": 3401244,
+      "sha256": "143df2080760b80fa816a7f3f14170abfebb1e0e5e4253e3d633255b78ec11d9",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337388"
     },
     {
       "name": "yolov8n_edgetrack_int8_allconv.onnx",
       "description": "as int8 with the head quantised too; ablation",
       "required_for_demo": false,
-      "bytes": 3378975,
-      "sha256": "0a519cab62c275da99205b02ca57f1cadf2e1cb0564b3ae1e88b6a4e81416090",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838979"
+      "bytes": 3378921,
+      "sha256": "66372186f34b6d3ee28bdf5c47b1d80b9440c0d0a321b1c0290ef6af2fd6794d",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337398"
     },
     {
       "name": "yolov8n_edgetrack_int8_allops.onnx",
       "description": "ONNX Runtime defaults; scores 0.0 mAP and is published so the failure reproduces",
       "required_for_demo": false,
-      "bytes": 3406941,
-      "sha256": "4f1d80efcd7025ee1a3018333f7eaf85a63744c379e0840769377228b85ff062",
-      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/524838984"
+      "bytes": 3406887,
+      "sha256": "e1df09d6cc68773972124b8fa8f4a7084dea761ba1a0dc82f66c6f9b1d54dc69",
+      "url": "https://api.github.com/repos/CGainsWorks/cv-yolo-detect-track-jetson/releases/assets/646337431"
     }
   ]
 }

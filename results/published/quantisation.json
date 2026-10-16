@@ -1,9 +1,9 @@
 {
   "int8": {
     "path": "models/yolov8n_edgetrack_int8.onnx",
-    "bytes": 3401298,
-    "sha256": "377bf110ed3c89bf092785d6c53d6d1967ea8c65ca258b3fa8964a7349aa06e9",
-    "fp32_bytes": 12200294,
+    "bytes": 3401244,
+    "sha256": "143df2080760b80fa816a7f3f14170abfebb1e0e5e4253e3d633255b78ec11d9",
+    "fp32_bytes": 12200240,
     "size_ratio": 0.2788,
     "calibration_split": "train",
     "calibration_pool": 1440,
@@ -31,9 +31,9 @@
   },
   "int8_allconv": {
     "path": "models/yolov8n_edgetrack_int8_allconv.onnx",
-    "bytes": 3378975,
-    "sha256": "0a519cab62c275da99205b02ca57f1cadf2e1cb0564b3ae1e88b6a4e81416090",
-    "fp32_bytes": 12200294,
+    "bytes": 3378921,
+    "sha256": "66372186f34b6d3ee28bdf5c47b1d80b9440c0d0a321b1c0290ef6af2fd6794d",
+    "fp32_bytes": 12200240,
     "size_ratio": 0.277,
     "calibration_split": "train",
     "calibration_pool": 1440,
@@ -53,9 +53,9 @@
   },
   "int8_allops": {
     "path": "models/yolov8n_edgetrack_int8_allops.onnx",
-    "bytes": 3406941,
-    "sha256": "4f1d80efcd7025ee1a3018333f7eaf85a63744c379e0840769377228b85ff062",
-    "fp32_bytes": 12200294,
+    "bytes": 3406887,
+    "sha256": "e1df09d6cc68773972124b8fa8f4a7084dea761ba1a0dc82f66c6f9b1d54dc69",
+    "fp32_bytes": 12200240,
     "size_ratio": 0.2793,
     "calibration_split": "train",
     "calibration_pool": 1440,
