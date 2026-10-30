@@ -1,8 +1,8 @@
 variant,backend,precision,provider,device_class,map50,map50_95,inference_p50_ms,inference_p95_ms,end_to_end_p50_ms,fps_end_to_end,model_bytes
-onnx-cpu-fp32,onnxruntime,fp32,CPUExecutionProvider,desktop,0.9727,0.86495,15.693,17.32,21.714,45.86,12200240
-onnx-cpu-fp16,onnxruntime,fp16,CPUExecutionProvider,desktop,0.9727,0.86151,18.593,20.985,24.944,39.71,6136948
-onnx-cpu-int8,onnxruntime,int8,CPUExecutionProvider,desktop,0.97003,0.8549,16.875,19.818,22.551,44.2,3401244
-onnx-cpu-int8-allconv,onnxruntime,int8,CPUExecutionProvider,desktop,0.96977,0.81931,15.279,17.477,21.321,47.09,3378921
-onnx-cpu-int8-allops,onnxruntime,int8,CPUExecutionProvider,desktop,0.0,0.0,11.813,12.926,15.488,65.82,3406887
-torch-cuda-fp32,pytorch,fp32,cuda,desktop,,,8.925,9.838,13.558,72.17,6218969
-torch-cuda-fp16,pytorch,fp16,cuda,desktop,,,11.674,13.066,16.511,58.29,6218969
+onnx-cpu-fp32,onnxruntime,fp32,CPUExecutionProvider,desktop,0.97756,0.86049,17.999,22.546,23.429,42.18,
+onnx-cpu-fp16,onnxruntime,fp16,CPUExecutionProvider,desktop,0.97715,0.85905,20.55,25.484,25.381,38.63,
+onnx-cpu-int8,onnxruntime,int8,CPUExecutionProvider,desktop,0.97706,0.83429,16.115,18.131,21.244,46.43,
+onnx-cpu-int8-allconv,onnxruntime,int8,CPUExecutionProvider,desktop,0.97713,0.82063,16.272,18.844,21.367,46.23,
+onnx-cpu-int8-allops,onnxruntime,int8,CPUExecutionProvider,desktop,0.0,0.0,11.738,13.482,14.583,67.59,
+torch-cuda-fp32,pytorch,fp32,cuda,desktop,,,10.651,11.076,14.82,67.27,
+torch-cuda-fp16,pytorch,fp16,cuda,desktop,,,13.686,14.228,18.083,55.34,

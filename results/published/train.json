@@ -1,50 +1,74 @@
 {
-  "weights": "models/yolov8n_edgetrack.pt",
-  "run_dir": "yolov8n_edgetrack",
-  "device": "0",
+  "weights": "models/yolox_tiny_edgetrack.pt",
+  "run_dir": "yolox_tiny_edgetrack",
+  "architecture": "yolox_tiny",
+  "pretrained": {
+    "url": "https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_tiny.pth",
+    "sha256": "9de513de589ac98bb92d3bca53b5af7b9acfa9b0bacb831f7999d0f7afaee8f0",
+    "licence": "Apache-2.0"
+  },
+  "pretrained_load": {
+    "loaded": 456,
+    "skipped": [
+      "head.cls_preds.0.bias",
+      "head.cls_preds.0.weight",
+      "head.cls_preds.1.bias",
+      "head.cls_preds.1.weight",
+      "head.cls_preds.2.bias",
+      "head.cls_preds.2.weight"
+    ]
+  },
+  "device": "cuda:0",
   "gpu_name": "NVIDIA GeForce RTX 4060",
   "torch": "2.13.0+cu126",
-  "train_seconds": 759.2,
-  "overrides": {
-    "epochs": 60,
-    "batch": 32,
-    "imgsz": 640,
-    "workers": 4,
-    "seed": 0,
-    "deterministic": true,
-    "patience": 20,
-    "optimizer": "auto",
-    "lr0": 0.01,
-    "lrf": 0.01,
-    "cos_lr": true,
+  "yolox": "0.3.0",
+  "train_seconds": 1710.0,
+  "batch": 32,
+  "fp16_training": true,
+  "exp": {
+    "input_size": [
+      384,
+      640
+    ],
+    "test_size": [
+      384,
+      640
+    ],
+    "multiscale_range": 5,
+    "max_epoch": 60,
     "warmup_epochs": 3,
-    "close_mosaic": 10,
-    "val": true,
-    "plots": true,
-    "cache": false,
-    "hsv_h": 0.005,
-    "hsv_s": 0.3,
-    "hsv_v": 0.3,
+    "no_aug_epochs": 10,
+    "basic_lr_per_img": 0.00015625,
+    "min_lr_ratio": 0.05,
+    "weight_decay": 0.0005,
+    "momentum": 0.9,
+    "ema": true,
+    "eval_interval": 10,
+    "print_interval": 20,
+    "save_history_ckpt": false,
+    "data_num_workers": 4,
+    "hsv_prob": 0.0,
+    "flip_prob": 0.5,
     "degrees": 0.0,
-    "translate": 0.1,
-    "scale": 0.4,
     "shear": 0.0,
-    "perspective": 0.0,
-    "flipud": 0.0,
-    "fliplr": 0.5,
-    "mosaic": 1.0,
-    "mixup": 0.0
+    "translate": 0.1,
+    "mosaic_prob": 1.0,
+    "mosaic_scale": [
+      0.6,
+      1.4
+    ],
+    "enable_mixup": false,
+    "mixup_prob": 0.0,
+    "test_conf": 0.01,
+    "nmsthre": 0.65
   },
-  "ultralytics_val": {
-    "map50": 0.99042,
-    "map50_95": 0.89251,
-    "precision": 0.97948,
-    "recall": 0.9763,
-    "per_class_map50_95": {
-      "person": 0.96973,
-      "forklift": 0.95891,
-      "pallet": 0.86437,
-      "cone": 0.77702
-    }
+  "label_boxes": {
+    "train": 8184,
+    "val": 2023
+  },
+  "yolox_val": {
+    "map50": 0.99391,
+    "map50_95": 0.90661,
+    "evaluator": "yolox.evaluators.COCOEvaluator (pycocotools)"
   }
 }

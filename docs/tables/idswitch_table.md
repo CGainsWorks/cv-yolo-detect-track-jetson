@@ -2,11 +2,11 @@
 
 | cause | bytetrack | deepsort |
 | --- | ---: | ---: |
-| detector_gap | 9 | 9 |
-| occlusion | 15 | 20 |
+| detector_gap | 8 | 7 |
+| occlusion | 15 | 25 |
 | crossing | 0 | 0 |
 | fast_motion | 0 | 0 |
-| unattributed | 0 | 3 |
-| **total** | **24** | **32** |
+| unattributed | 0 | 1 |
+| **total** | **23** | **33** |
 
-Switches per hundred ground-truth detections: bytetrack 0.2947, deepsort 0.3929.
+Switches per hundred ground-truth detections: bytetrack 0.2824, deepsort 0.4052.

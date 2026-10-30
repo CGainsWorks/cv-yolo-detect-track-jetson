@@ -2,10 +2,10 @@
 
 | variant | backend | precision | mAP@0.5 | mAP@0.5:0.95 | inference p50 | inference p95 | end to end p50 | end-to-end FPS |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `onnx-cpu-fp32` | onnxruntime | fp32 | 0.9727 | 0.8649 | 15.69 ms | 17.32 ms | 21.71 ms | 45.9 |
-| `onnx-cpu-fp16` | onnxruntime | fp16 | 0.9727 | 0.8615 | 18.59 ms | 20.98 ms | 24.94 ms | 39.7 |
-| `onnx-cpu-int8` | onnxruntime | int8 | 0.9700 | 0.8549 | 16.88 ms | 19.82 ms | 22.55 ms | 44.2 |
-| `onnx-cpu-int8-allconv` | onnxruntime | int8 | 0.9698 | 0.8193 | 15.28 ms | 17.48 ms | 21.32 ms | 47.1 |
-| `onnx-cpu-int8-allops` | onnxruntime | int8 | 0.0000 | 0.0000 | 11.81 ms | 12.93 ms | 15.49 ms | 65.8 |
-| `torch-cuda-fp32` | pytorch | fp32 | n/a | n/a | 8.93 ms | 9.84 ms | 13.56 ms | 72.2 |
-| `torch-cuda-fp16` | pytorch | fp16 | n/a | n/a | 11.67 ms | 13.07 ms | 16.51 ms | 58.3 |
+| `onnx-cpu-fp32` | onnxruntime | fp32 | 0.9776 | 0.8605 | 18.00 ms | 22.55 ms | 23.43 ms | 42.2 |
+| `onnx-cpu-fp16` | onnxruntime | fp16 | 0.9771 | 0.8590 | 20.55 ms | 25.48 ms | 25.38 ms | 38.6 |
+| `onnx-cpu-int8` | onnxruntime | int8 | 0.9771 | 0.8343 | 16.11 ms | 18.13 ms | 21.24 ms | 46.4 |
+| `onnx-cpu-int8-allconv` | onnxruntime | int8 | 0.9771 | 0.8206 | 16.27 ms | 18.84 ms | 21.37 ms | 46.2 |
+| `onnx-cpu-int8-allops` | onnxruntime | int8 | 0.0000 | 0.0000 | 11.74 ms | 13.48 ms | 14.58 ms | 67.6 |
+| `torch-cuda-fp32` | pytorch | fp32 | n/a | n/a | 10.65 ms | 11.08 ms | 14.82 ms | 67.3 |
+| `torch-cuda-fp16` | pytorch | fp16 | n/a | n/a | 13.69 ms | 14.23 ms | 18.08 ms | 55.3 |

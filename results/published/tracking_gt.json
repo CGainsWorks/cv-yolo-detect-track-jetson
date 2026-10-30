@@ -23,7 +23,7 @@
   "trackers": {
     "bytetrack": {
       "config": {
-        "track_thresh": 0.5,
+        "track_thresh": 0.6,
         "det_thresh": 0.6,
         "low_thresh": 0.1,
         "match_thresh": 0.7,
@@ -65,9 +65,9 @@
         "detector_gap": 7
       },
       "frame_ms": {
-        "mean": 0.424,
-        "p50": 0.429,
-        "p95": 0.531
+        "mean": 0.407,
+        "p50": 0.423,
+        "p95": 0.506
       },
       "per_sequence": {
         "test_seq21000": {
@@ -511,9 +511,9 @@
         "detector_gap": 5
       },
       "frame_ms": {
-        "mean": 2.217,
-        "p50": 2.218,
-        "p95": 3.481
+        "mean": 1.831,
+        "p50": 1.84,
+        "p95": 2.676
       },
       "per_sequence": {
         "test_seq21000": {

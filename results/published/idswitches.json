@@ -4,43 +4,31 @@
   "causes": {
     "bytetrack": {
       "occlusion": 15,
-      "detector_gap": 9
+      "detector_gap": 8
     },
     "deepsort": {
-      "occlusion": 20,
-      "unattributed": 3,
-      "detector_gap": 9
+      "occlusion": 25,
+      "detector_gap": 7,
+      "unattributed": 1
     }
   },
   "totals": {
-    "bytetrack": 24,
-    "deepsort": 32
+    "bytetrack": 23,
+    "deepsort": 33
   },
   "switches_per_hundred_frames": {
-    "bytetrack": 0.2947,
-    "deepsort": 0.3929
+    "bytetrack": 0.2824,
+    "deepsort": 0.4052
   },
   "worst_sequences": {
     "bytetrack": [
       {
         "sequence": "test_seq21005",
-        "switches": 4,
-        "idf1": 0.84766,
+        "switches": 5,
+        "idf1": 0.85544,
         "causes": {
           "detector_gap": 1,
-          "occlusion": 3,
-          "crossing": 0,
-          "fast_motion": 0,
-          "unattributed": 0
-        }
-      },
-      {
-        "sequence": "test_seq21002",
-        "switches": 3,
-        "idf1": 0.90819,
-        "causes": {
-          "detector_gap": 0,
-          "occlusion": 3,
+          "occlusion": 4,
           "crossing": 0,
           "fast_motion": 0,
           "unattributed": 0
@@ -49,10 +37,22 @@
       {
         "sequence": "test_seq21003",
         "switches": 3,
-        "idf1": 0.90937,
+        "idf1": 0.90966,
         "causes": {
           "detector_gap": 0,
           "occlusion": 3,
+          "crossing": 0,
+          "fast_motion": 0,
+          "unattributed": 0
+        }
+      },
+      {
+        "sequence": "test_seq21011",
+        "switches": 3,
+        "idf1": 0.76026,
+        "causes": {
+          "detector_gap": 1,
+          "occlusion": 2,
           "crossing": 0,
           "fast_motion": 0,
           "unattributed": 0
@@ -61,33 +61,33 @@
     ],
     "deepsort": [
       {
-        "sequence": "test_seq21007",
-        "switches": 6,
-        "idf1": 0.86814,
+        "sequence": "test_seq21004",
+        "switches": 8,
+        "idf1": 0.87759,
         "causes": {
-          "detector_gap": 2,
-          "occlusion": 3,
+          "detector_gap": 1,
+          "occlusion": 6,
           "crossing": 0,
           "fast_motion": 0,
           "unattributed": 1
         }
       },
       {
-        "sequence": "test_seq21000",
-        "switches": 5,
-        "idf1": 0.90677,
+        "sequence": "test_seq21003",
+        "switches": 4,
+        "idf1": 0.8986,
         "causes": {
           "detector_gap": 0,
           "occlusion": 4,
           "crossing": 0,
           "fast_motion": 0,
-          "unattributed": 1
+          "unattributed": 0
         }
       },
       {
         "sequence": "test_seq21005",
         "switches": 4,
-        "idf1": 0.83675,
+        "idf1": 0.82244,
         "causes": {
           "detector_gap": 1,
           "occlusion": 3,

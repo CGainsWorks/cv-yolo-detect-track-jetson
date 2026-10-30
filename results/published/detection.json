@@ -14,184 +14,184 @@
     "cone"
   ],
   "variants": {
-    "yolov8n_edgetrack_fp32": {
-      "model": "models/yolov8n_edgetrack_fp32.onnx",
+    "yolox_tiny_edgetrack_fp32": {
+      "model": "models/yolox_tiny_edgetrack_fp32.onnx",
       "detector": {
         "backend": "onnxruntime",
         "precision": "fp32",
-        "model_path": "models/yolov8n_edgetrack_fp32.onnx",
+        "model_path": "models/yolox_tiny_edgetrack_fp32.onnx",
         "providers": [
           "CPUExecutionProvider"
         ],
         "input_dtype": "float32"
       },
       "metrics": {
-        "map50": 0.9727,
-        "map50_95": 0.86495,
-        "precision": 0.95974,
-        "recall": 0.95456,
+        "map50": 0.97756,
+        "map50_95": 0.86049,
+        "precision": 0.954,
+        "recall": 0.96549,
         "n_gt": 8142,
-        "n_pred": 22096,
+        "n_pred": 13786,
         "per_class_ap50": {
-          "0": 0.98826,
-          "1": 0.97741,
-          "2": 0.98572,
-          "3": 0.93942
+          "0": 0.98985,
+          "1": 0.98753,
+          "2": 0.96318,
+          "3": 0.96967
         },
         "per_class_ap50_95": {
-          "0": 0.9305,
-          "1": 0.90837,
-          "2": 0.83831,
-          "3": 0.78261
+          "0": 0.92745,
+          "1": 0.90504,
+          "2": 0.77845,
+          "3": 0.83101
         }
       },
       "per_class_ap50_95_named": {
-        "person": 0.9305,
-        "forklift": 0.90837,
-        "pallet": 0.83831,
-        "cone": 0.78261
+        "person": 0.92745,
+        "forklift": 0.90504,
+        "pallet": 0.77845,
+        "cone": 0.83101
       },
       "wall_ms": {
-        "mean": 19.318,
-        "p50": 19.303,
-        "p95": 21.276
+        "mean": 28.485,
+        "p50": 28.825,
+        "p95": 31.038
       }
     },
-    "yolov8n_edgetrack_fp16": {
-      "model": "models/yolov8n_edgetrack_fp16.onnx",
+    "yolox_tiny_edgetrack_fp16": {
+      "model": "models/yolox_tiny_edgetrack_fp16.onnx",
       "detector": {
         "backend": "onnxruntime",
         "precision": "fp16",
-        "model_path": "models/yolov8n_edgetrack_fp16.onnx",
+        "model_path": "models/yolox_tiny_edgetrack_fp16.onnx",
         "providers": [
           "CPUExecutionProvider"
         ],
         "input_dtype": "float16"
       },
       "metrics": {
-        "map50": 0.9727,
-        "map50_95": 0.86151,
-        "precision": 0.95963,
-        "recall": 0.95468,
+        "map50": 0.97715,
+        "map50_95": 0.85905,
+        "precision": 0.95399,
+        "recall": 0.96512,
         "n_gt": 8142,
-        "n_pred": 22106,
+        "n_pred": 13765,
         "per_class_ap50": {
-          "0": 0.98828,
-          "1": 0.97742,
-          "2": 0.98572,
-          "3": 0.93938
+          "0": 0.98985,
+          "1": 0.98754,
+          "2": 0.96148,
+          "3": 0.96971
         },
         "per_class_ap50_95": {
-          "0": 0.9301,
-          "1": 0.90838,
-          "2": 0.83311,
-          "3": 0.77445
+          "0": 0.92574,
+          "1": 0.90469,
+          "2": 0.77791,
+          "3": 0.82785
         }
       },
       "per_class_ap50_95_named": {
-        "person": 0.9301,
-        "forklift": 0.90838,
-        "pallet": 0.83311,
-        "cone": 0.77445
+        "person": 0.92574,
+        "forklift": 0.90469,
+        "pallet": 0.77791,
+        "cone": 0.82785
       },
       "wall_ms": {
-        "mean": 22.635,
-        "p50": 22.586,
-        "p95": 24.778
+        "mean": 30.817,
+        "p50": 31.27,
+        "p95": 34.559
       }
     },
-    "yolov8n_edgetrack_int8": {
-      "model": "models/yolov8n_edgetrack_int8.onnx",
+    "yolox_tiny_edgetrack_int8": {
+      "model": "models/yolox_tiny_edgetrack_int8.onnx",
       "detector": {
         "backend": "onnxruntime",
         "precision": "int8",
-        "model_path": "models/yolov8n_edgetrack_int8.onnx",
+        "model_path": "models/yolox_tiny_edgetrack_int8.onnx",
         "providers": [
           "CPUExecutionProvider"
         ],
         "input_dtype": "float32"
       },
       "metrics": {
-        "map50": 0.97003,
-        "map50_95": 0.8549,
-        "precision": 0.96381,
-        "recall": 0.94866,
+        "map50": 0.97706,
+        "map50_95": 0.83429,
+        "precision": 0.95383,
+        "recall": 0.96426,
         "n_gt": 8142,
-        "n_pred": 29154,
+        "n_pred": 15383,
         "per_class_ap50": {
-          "0": 0.98751,
-          "1": 0.97672,
-          "2": 0.98524,
-          "3": 0.93066
+          "0": 0.98985,
+          "1": 0.987,
+          "2": 0.95569,
+          "3": 0.97569
         },
         "per_class_ap50_95": {
-          "0": 0.92754,
-          "1": 0.90071,
-          "2": 0.82784,
-          "3": 0.7635
+          "0": 0.89878,
+          "1": 0.87294,
+          "2": 0.75657,
+          "3": 0.80886
         }
       },
       "per_class_ap50_95_named": {
-        "person": 0.92754,
-        "forklift": 0.90071,
-        "pallet": 0.82784,
-        "cone": 0.7635
+        "person": 0.89878,
+        "forklift": 0.87294,
+        "pallet": 0.75657,
+        "cone": 0.80886
       },
       "wall_ms": {
-        "mean": 20.606,
-        "p50": 20.481,
-        "p95": 23.837
+        "mean": 25.808,
+        "p50": 25.745,
+        "p95": 29.208
       }
     },
-    "yolov8n_edgetrack_int8_allconv": {
-      "model": "models/yolov8n_edgetrack_int8_allconv.onnx",
+    "yolox_tiny_edgetrack_int8_allconv": {
+      "model": "models/yolox_tiny_edgetrack_int8_allconv.onnx",
       "detector": {
         "backend": "onnxruntime",
         "precision": "int8",
-        "model_path": "models/yolov8n_edgetrack_int8_allconv.onnx",
+        "model_path": "models/yolox_tiny_edgetrack_int8_allconv.onnx",
         "providers": [
           "CPUExecutionProvider"
         ],
         "input_dtype": "float32"
       },
       "metrics": {
-        "map50": 0.96977,
-        "map50_95": 0.81931,
-        "precision": 0.96179,
-        "recall": 0.94903,
+        "map50": 0.97713,
+        "map50_95": 0.82063,
+        "precision": 0.95375,
+        "recall": 0.96487,
         "n_gt": 8142,
-        "n_pred": 29776,
+        "n_pred": 15793,
         "per_class_ap50": {
-          "0": 0.98706,
-          "1": 0.97655,
-          "2": 0.9846,
-          "3": 0.93086
+          "0": 0.98985,
+          "1": 0.98724,
+          "2": 0.95584,
+          "3": 0.97559
         },
         "per_class_ap50_95": {
-          "0": 0.8861,
-          "1": 0.87415,
-          "2": 0.8027,
-          "3": 0.7143
+          "0": 0.87939,
+          "1": 0.85112,
+          "2": 0.7481,
+          "3": 0.80391
         }
       },
       "per_class_ap50_95_named": {
-        "person": 0.8861,
-        "forklift": 0.87415,
-        "pallet": 0.8027,
-        "cone": 0.7143
+        "person": 0.87939,
+        "forklift": 0.85112,
+        "pallet": 0.7481,
+        "cone": 0.80391
       },
       "wall_ms": {
-        "mean": 18.037,
-        "p50": 18.225,
-        "p95": 20.709
+        "mean": 25.848,
+        "p50": 25.793,
+        "p95": 29.205
       }
     },
-    "yolov8n_edgetrack_int8_allops": {
-      "model": "models/yolov8n_edgetrack_int8_allops.onnx",
+    "yolox_tiny_edgetrack_int8_allops": {
+      "model": "models/yolox_tiny_edgetrack_int8_allops.onnx",
       "detector": {
         "backend": "onnxruntime",
         "precision": "int8",
-        "model_path": "models/yolov8n_edgetrack_int8_allops.onnx",
+        "model_path": "models/yolox_tiny_edgetrack_int8_allops.onnx",
         "providers": [
           "CPUExecutionProvider"
         ],
@@ -224,9 +224,9 @@
         "cone": 0.0
       },
       "wall_ms": {
-        "mean": 15.074,
-        "p50": 15.236,
-        "p95": 17.516
+        "mean": 18.392,
+        "p50": 18.32,
+        "p95": 20.869
       }
     }
   }

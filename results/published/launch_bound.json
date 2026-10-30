@@ -3,7 +3,7 @@
   "torch": "2.13.0+cu126",
   "cuda": "12.6",
   "platform": "Windows-11-10.0.26200-SP0",
-  "sm_clock_mhz": 2475,
+  "sm_clock_mhz": 210,
   "iterations": 120,
   "cudnn_benchmark": true,
   "batch_sweep": [
@@ -12,36 +12,36 @@
       "height": 384,
       "width": 640,
       "megapixels": 0.2458,
-      "p50_ms": 9.99,
-      "mean_ms": 9.779,
-      "per_image_p50_ms": 9.99
+      "p50_ms": 9.986,
+      "mean_ms": 9.993,
+      "per_image_p50_ms": 9.986
     },
     {
       "batch": 2,
       "height": 384,
       "width": 640,
       "megapixels": 0.4915,
-      "p50_ms": 10.971,
-      "mean_ms": 10.975,
-      "per_image_p50_ms": 5.485
+      "p50_ms": 9.856,
+      "mean_ms": 9.871,
+      "per_image_p50_ms": 4.928
     },
     {
       "batch": 4,
       "height": 384,
       "width": 640,
       "megapixels": 0.983,
-      "p50_ms": 9.732,
-      "mean_ms": 10.221,
-      "per_image_p50_ms": 2.433
+      "p50_ms": 9.38,
+      "mean_ms": 9.413,
+      "per_image_p50_ms": 2.345
     },
     {
       "batch": 8,
       "height": 384,
       "width": 640,
       "megapixels": 1.9661,
-      "p50_ms": 12.359,
-      "mean_ms": 12.291,
-      "per_image_p50_ms": 1.545
+      "p50_ms": 12.899,
+      "mean_ms": 12.891,
+      "per_image_p50_ms": 1.612
     }
   ],
   "resolution_sweep": [
@@ -50,25 +50,25 @@
       "height": 384,
       "width": 640,
       "megapixels": 0.2458,
-      "p50_ms": 12.863,
-      "mean_ms": 12.855,
-      "per_image_p50_ms": 12.863
+      "p50_ms": 10.063,
+      "mean_ms": 10.066,
+      "per_image_p50_ms": 10.063
     },
     {
       "batch": 1,
       "height": 768,
       "width": 1280,
       "megapixels": 0.983,
-      "p50_ms": 13.254,
-      "mean_ms": 12.782,
-      "per_image_p50_ms": 13.254
+      "p50_ms": 9.457,
+      "mean_ms": 9.464,
+      "per_image_p50_ms": 9.457
     }
   ],
   "verdict": {
-    "batch_time_ratio": 1.237,
+    "batch_time_ratio": 1.292,
     "batch_size_ratio": 8,
-    "per_image_speedup_at_max_batch": 6.466,
-    "resolution_time_ratio": 1.327,
+    "per_image_speedup_at_max_batch": 6.195,
+    "resolution_time_ratio": 0.947,
     "resolution_pixel_ratio": 3.999,
     "launch_bound": true
   }

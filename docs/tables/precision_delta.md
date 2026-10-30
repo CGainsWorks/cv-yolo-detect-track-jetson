@@ -2,8 +2,8 @@
 
 | backend | provider | variant | precision | mAP@0.5:0.95 delta | inference p50 speedup |
 | --- | --- | --- | --- | ---: | ---: |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-fp16` | fp16 | -0.00344 | 0.84x |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8` | int8 | -0.01005 | 0.93x |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allconv` | int8 | -0.04564 | 1.03x |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allops` | int8 | -0.86495 | 1.33x |
-| pytorch | cuda | `torch-cuda-fp16` | fp16 | n/a | 0.76x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-fp16` | fp16 | -0.00144 | 0.88x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8` | int8 | -0.02620 | 1.12x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allconv` | int8 | -0.03986 | 1.11x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allops` | int8 | -0.86049 | 1.53x |
+| pytorch | cuda | `torch-cuda-fp16` | fp16 | n/a | 0.78x |

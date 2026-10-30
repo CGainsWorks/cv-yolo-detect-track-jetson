@@ -1,0 +1,307 @@
+{
+  "note": "YOLOv8n numbers are results/published at the baseline commit; YOLOX-Tiny numbers are the current results/published.  delta is YOLOX-Tiny minus YOLOv8n.",
+  "baseline_ref": "9a1d9ae",
+  "yolov8n": {
+    "val_map50_95": 0.89251,
+    "test": {
+      "fp32": {
+        "map50": 0.9727,
+        "map50_95": 0.86495,
+        "per_class_map50_95": {
+          "person": 0.9305,
+          "forklift": 0.90837,
+          "pallet": 0.83831,
+          "cone": 0.78261
+        }
+      },
+      "fp16": {
+        "map50": 0.9727,
+        "map50_95": 0.86151,
+        "per_class_map50_95": {
+          "person": 0.9301,
+          "forklift": 0.90838,
+          "pallet": 0.83311,
+          "cone": 0.77445
+        }
+      },
+      "int8": {
+        "map50": 0.97003,
+        "map50_95": 0.8549,
+        "per_class_map50_95": {
+          "person": 0.92754,
+          "forklift": 0.90071,
+          "pallet": 0.82784,
+          "cone": 0.7635
+        }
+      },
+      "int8_allconv": {
+        "map50": 0.96977,
+        "map50_95": 0.81931,
+        "per_class_map50_95": {
+          "person": 0.8861,
+          "forklift": 0.87415,
+          "pallet": 0.8027,
+          "cone": 0.7143
+        }
+      },
+      "int8_allops": {
+        "map50": 0.0,
+        "map50_95": 0.0,
+        "per_class_map50_95": {
+          "person": 0.0,
+          "forklift": 0.0,
+          "pallet": 0.0,
+          "cone": 0.0
+        }
+      }
+    },
+    "int8_bytes": 3401244,
+    "fp32_bytes": 12200240,
+    "onnx_cpu_fp32_inference_p50_ms": 15.693,
+    "torch_cuda_fp32_inference_p50_ms": 8.925,
+    "tensorrt": {
+      "fp32": {
+        "map50_95": 0.86478,
+        "inference_p50_ms": 2.082,
+        "engine_bytes": 17607164,
+        "map50_95_delta_vs_onnxruntime_fp32": -0.00017
+      },
+      "fp16": {
+        "map50_95": 0.86488,
+        "inference_p50_ms": 1.517,
+        "engine_bytes": 10150748,
+        "map50_95_delta_vs_onnxruntime_fp32": -7e-05
+      },
+      "int8": {
+        "map50_95": 0.80087,
+        "inference_p50_ms": 1.647,
+        "engine_bytes": 8310276,
+        "map50_95_delta_vs_onnxruntime_fp32": -0.06408
+      }
+    },
+    "tracking": {
+      "bytetrack": {
+        "mota": 0.91257,
+        "idf1": 0.91194,
+        "num_switches": 24,
+        "num_false_positives": 206,
+        "num_misses": 482
+      },
+      "deepsort": {
+        "mota": 0.90238,
+        "idf1": 0.8946,
+        "num_switches": 32,
+        "num_false_positives": 174,
+        "num_misses": 589
+      }
+    },
+    "deepsort_histogram": {
+      "mota": 0.90533,
+      "idf1": 0.91113,
+      "num_switches": 19
+    },
+    "launch_bound_batch_time_ratio": 1.237
+  },
+  "yolox_tiny": {
+    "val_map50_95": 0.90661,
+    "test": {
+      "fp32": {
+        "map50": 0.97756,
+        "map50_95": 0.86049,
+        "per_class_map50_95": {
+          "person": 0.92745,
+          "forklift": 0.90504,
+          "pallet": 0.77845,
+          "cone": 0.83101
+        }
+      },
+      "fp16": {
+        "map50": 0.97715,
+        "map50_95": 0.85905,
+        "per_class_map50_95": {
+          "person": 0.92574,
+          "forklift": 0.90469,
+          "pallet": 0.77791,
+          "cone": 0.82785
+        }
+      },
+      "int8": {
+        "map50": 0.97706,
+        "map50_95": 0.83429,
+        "per_class_map50_95": {
+          "person": 0.89878,
+          "forklift": 0.87294,
+          "pallet": 0.75657,
+          "cone": 0.80886
+        }
+      },
+      "int8_allconv": {
+        "map50": 0.97713,
+        "map50_95": 0.82063,
+        "per_class_map50_95": {
+          "person": 0.87939,
+          "forklift": 0.85112,
+          "pallet": 0.7481,
+          "cone": 0.80391
+        }
+      },
+      "int8_allops": {
+        "map50": 0.0,
+        "map50_95": 0.0,
+        "per_class_map50_95": {
+          "person": 0.0,
+          "forklift": 0.0,
+          "pallet": 0.0,
+          "cone": 0.0
+        }
+      }
+    },
+    "int8_bytes": 5516230,
+    "fp32_bytes": 20299472,
+    "onnx_cpu_fp32_inference_p50_ms": 17.999,
+    "torch_cuda_fp32_inference_p50_ms": 10.651,
+    "tensorrt": {
+      "fp32": {
+        "map50_95": 0.86045,
+        "inference_p50_ms": 2.396,
+        "engine_bytes": 31580972,
+        "map50_95_delta_vs_onnxruntime_fp32": -4e-05
+      },
+      "fp16": {
+        "map50_95": 0.86031,
+        "inference_p50_ms": 1.655,
+        "engine_bytes": 14164036,
+        "map50_95_delta_vs_onnxruntime_fp32": -0.00018
+      },
+      "int8": {
+        "map50_95": 0.81967,
+        "inference_p50_ms": 1.721,
+        "engine_bytes": 9971580,
+        "map50_95_delta_vs_onnxruntime_fp32": -0.04082
+      }
+    },
+    "tracking": {
+      "bytetrack": {
+        "mota": 0.89993,
+        "idf1": 0.90797,
+        "num_switches": 23,
+        "num_false_positives": 347,
+        "num_misses": 445
+      },
+      "deepsort": {
+        "mota": 0.89538,
+        "idf1": 0.89544,
+        "num_switches": 33,
+        "num_false_positives": 304,
+        "num_misses": 515
+      }
+    },
+    "deepsort_histogram": {
+      "mota": 0.89808,
+      "idf1": 0.90165,
+      "num_switches": 19
+    },
+    "launch_bound_batch_time_ratio": 1.292
+  },
+  "delta": {
+    "val_map50_95": 0.0141,
+    "test": {
+      "fp32": {
+        "map50": 0.00486,
+        "map50_95": -0.00446,
+        "per_class_map50_95": {
+          "person": -0.00305,
+          "forklift": -0.00333,
+          "pallet": -0.05986,
+          "cone": 0.0484
+        }
+      },
+      "fp16": {
+        "map50": 0.00445,
+        "map50_95": -0.00246,
+        "per_class_map50_95": {
+          "person": -0.00436,
+          "forklift": -0.00369,
+          "pallet": -0.0552,
+          "cone": 0.0534
+        }
+      },
+      "int8": {
+        "map50": 0.00703,
+        "map50_95": -0.02061,
+        "per_class_map50_95": {
+          "person": -0.02876,
+          "forklift": -0.02777,
+          "pallet": -0.07127,
+          "cone": 0.04536
+        }
+      },
+      "int8_allconv": {
+        "map50": 0.00736,
+        "map50_95": 0.00132,
+        "per_class_map50_95": {
+          "person": -0.00671,
+          "forklift": -0.02303,
+          "pallet": -0.0546,
+          "cone": 0.08961
+        }
+      },
+      "int8_allops": {
+        "map50": 0.0,
+        "map50_95": 0.0,
+        "per_class_map50_95": {
+          "person": 0.0,
+          "forklift": 0.0,
+          "pallet": 0.0,
+          "cone": 0.0
+        }
+      }
+    },
+    "int8_bytes": 2114986,
+    "fp32_bytes": 8099232,
+    "onnx_cpu_fp32_inference_p50_ms": 2.306,
+    "torch_cuda_fp32_inference_p50_ms": 1.726,
+    "tensorrt": {
+      "fp32": {
+        "map50_95": -0.00433,
+        "inference_p50_ms": 0.314,
+        "engine_bytes": 13973808,
+        "map50_95_delta_vs_onnxruntime_fp32": 0.00013
+      },
+      "fp16": {
+        "map50_95": -0.00457,
+        "inference_p50_ms": 0.138,
+        "engine_bytes": 4013288,
+        "map50_95_delta_vs_onnxruntime_fp32": -0.00011
+      },
+      "int8": {
+        "map50_95": 0.0188,
+        "inference_p50_ms": 0.074,
+        "engine_bytes": 1661304,
+        "map50_95_delta_vs_onnxruntime_fp32": 0.02326
+      }
+    },
+    "tracking": {
+      "bytetrack": {
+        "mota": -0.01264,
+        "idf1": -0.00397,
+        "num_switches": -1,
+        "num_false_positives": 141,
+        "num_misses": -37
+      },
+      "deepsort": {
+        "mota": -0.007,
+        "idf1": 0.00084,
+        "num_switches": 1,
+        "num_false_positives": 130,
+        "num_misses": -74
+      }
+    },
+    "deepsort_histogram": {
+      "mota": -0.00725,
+      "idf1": -0.00948,
+      "num_switches": 0
+    },
+    "launch_bound_batch_time_ratio": 0.055
+  }
+}
