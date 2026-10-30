@@ -9,9 +9,12 @@ name: ci
 # container, the runtime image, and the check that every number quoted in the
 # documentation comes from a file in results/published/.
 #
-# It does not run TensorRT, because GitHub's runners have no NVIDIA GPU and
-# because the target is a Jetson that does not exist yet.  Nothing in
-# results/published/ came from TensorRT and docs/jetson.md says so.
+# It does not build or run a TensorRT engine, because GitHub's runners have no
+# NVIDIA GPU: the pinned TensorRT wheel imports but trt.Builder aborts the
+# process without a CUDA driver.  The `tensorrt-api` job checks every TensorRT
+# symbol the backend and the engine builder use against that wheel instead.
+# results/published/tensorrt.json came from `make tensorrt-desktop` on a
+# desktop RTX 4060, not from CI and not from a Jetson; docs/jetson.md says so.
 #
 # The part worth noticing is the `ros2` job: the node runs under a real ROS2
 # daemon and a real subscriber counts the messages, rather than a mock standing
@@ -33,6 +36,7 @@ env:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -88,6 +92,17 @@ jobs:
           ), "a TensorRT row appeared in the published latency results"
           print("skipped variants:", [s["name"] for s in latency["skipped"]])
 
+          # The TensorRT rows live in their own file, measured in NVIDIA's
+          # container on a desktop GPU and must say so.
+          trt = json.load(open(published / "tensorrt.json"))
+          assert "not a Jetson" in trt["device"], trt["device"]
+          pin = open("requirements-tensorrt.txt").read()
+          assert f"tensorrt-cu12=={trt['host']['tensorrt']}" in pin, trt["host"]
+          assert [r["precision"] for r in trt["rows"]] == ["fp32", "fp16", "int8"]
+          for row in trt["rows"]:
+              print(row["variant"], row["map50_95"], row["inference_p50_ms"], "ms")
+              assert row["map50_95"] > 0.5, row
+
           fp32 = next(
               e for e in detection["variants"].values()
               if e["detector"]["precision"] == "fp32"
@@ -113,6 +128,7 @@ jobs:
           diff -u benchmarks/results.csv /tmp/results.csv
           diff -u docs/tables/headline.md /tmp/tables/headline.md
           diff -u docs/tables/precision_delta.md /tmp/tables/precision_delta.md
+          diff -u docs/tables/tensorrt.md /tmp/tables/tensorrt.md
           diff -u results/published/precision_deltas.json /tmp/precision_deltas.json
 
       - name: The ID-switch table matches the published tracking results
@@ -128,6 +144,7 @@ jobs:
     # installs the AGPL training toolchain and pulls torch, which has no
     # business in the runtime image.
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -145,25 +162,20 @@ jobs:
           pip install -r requirements.txt
 
       - name: Fetch the published weights
-        id: fetch
-        continue-on-error: true
+        # Not continue-on-error.  It used to be and an unreachable release
+        # then skipped every detector step while the job stayed green, which
+        # is a pass that checked nothing.
         run: python scripts/fetch_model.py
         env:
-          # Needed only while the repository is private; a public release asset
-          # downloads without it.  Steps that need the weights are conditional
-          # on this one succeeding, so an unreachable release skips them rather
-          # than failing the job.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate a small dataset
         run: python scripts/make_dataset.py --preset small --quiet
 
       - name: Tests that need the exported model
-        if: steps.fetch.outcome == 'success'
         run: python -m pytest tests/test_backends.py -q -m "not slow" --durations=10
 
       - name: The demo runs end to end and the metrics are real
-        if: steps.fetch.outcome == 'success'
         run: |
           mkdir -p results
           python scripts/run_demo.py --source synth:7 --frames 60 \
@@ -195,7 +207,6 @@ jobs:
           PY
 
       - name: The exports rebuild from the checkpoint
-        if: steps.fetch.outcome == 'success'
         run: |
           pip install -r requirements-train.txt
           python scripts/export_onnx.py --weights models/yolov8n_edgetrack.pt \
@@ -233,7 +244,6 @@ jobs:
           PY
 
       - name: INT8 quantisation still produces a working model
-        if: steps.fetch.outcome == 'success'
         run: |
           python scripts/quantize_onnx.py --model models/yolov8n_edgetrack_fp32.onnx \
             --variants int8 --data-root data/processed
@@ -247,7 +257,6 @@ jobs:
           PY
 
       - name: A quick accuracy check on the small split
-        if: steps.fetch.outcome == 'success'
         run: |
           python scripts/evaluate.py --split test --limit 200 \
             --providers CPUExecutionProvider --out results/ci_detection.json \
@@ -279,9 +288,37 @@ jobs:
           path: results/ci_*.json
           if-no-files-found: warn
 
+  tensorrt-api:
+    # The TensorRT code path against the pinned TensorRT wheel, on a runner
+    # with no GPU.  It imports the backend, resolves every trt.* symbol the
+    # backend and scripts/export_tensorrt.py use and builds the INT8
+    # calibrator on TensorRT's real base class.  It cannot create a builder or
+    # a network definition: trt.Builder needs a CUDA driver and aborts the
+    # process without one.  Building and measuring engines is the manual
+    # `make tensorrt-desktop` step in docs/jetson.md.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the runtime and the pinned TensorRT wheel
+        # No pip cache: the TensorRT libraries are about 4 GB unpacked, which
+        # would cost more to save and restore than to download.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-tensorrt.txt
+
+      - name: The TensorRT code path matches the TensorRT API
+        run: python -m pytest tests/test_tensorrt_api.py -v --no-header
+
   ros2:
     # The ROS2 claim, checked against a real rclpy rather than a stand-in.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     container:
       image: ros:humble-ros-base
     steps:
@@ -316,6 +353,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
