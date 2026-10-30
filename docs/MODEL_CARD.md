@@ -1,7 +1,10 @@
-# Model card: yolov8n_edgetrack v1
+# Model card: yolox_tiny_edgetrack v2
 
-A YOLOv8n detector fine-tuned on a procedurally generated warehouse scene, plus
-a small appearance embedding used by the DeepSORT branch.
+A YOLOX-Tiny detector fine-tuned on a procedurally generated warehouse scene,
+plus a small appearance embedding used by the DeepSORT branch.  Version 2
+replaces the YOLOv8n detector of version 1, which carried an AGPL-3.0
+obligation; both the code and the starting weights are now Apache-2.0
+(`docs/licences.md`).
 
 **Trained on generated data.**  It detects rendered rectangles, not real
 forklifts.  Read `docs/limitations.md` before drawing any conclusion about
@@ -13,63 +16,78 @@ real-world performance from a number on this page.
 
 | | |
 | --- | --- |
-| Architecture | YOLOv8n, 3,006,428 parameters, 4.9 GFLOPs |
-| Starting point | COCO-pretrained `yolov8n.pt` |
+| Architecture | YOLOX-Tiny (YOLOX's tiny depth and width multipliers), 5,033,739 parameters, 9.14 GFLOPs at 640x384 by YOLOX's own count |
+| Starting point | Megvii's COCO checkpoint `yolox_tiny.pth`, Apache-2.0, digest in `configs/train.yaml` |
+| Tensors loaded from it | all but the three class-prediction convolutions, which are re-initialised for four classes |
 | Classes | person, forklift, pallet, cone |
-| Training input | 640x640 square, mosaic augmentation |
-| Inference input | 640x384, the native aspect of the data |
-| Training data | 1440 frames over 60 sequences |
-| Epochs | 60 |
-| Batch | 32 |
-| Optimiser | Ultralytics `auto`, lr0 0.01, cosine schedule, 3 warmup epochs |
+| Training input | 640x384, the native aspect, with YOLOX's multi-scale jitter of five strides either side |
+| Inference input | 640x384 |
+| Training data | 1440 frames over 60 sequences, 8184 boxes |
+| Epochs | 60, the last 10 without mosaic |
+| Batch | 32, mixed precision |
+| Optimiser | YOLOX's SGD with Nesterov momentum 0.9, 0.01 per 64 images, warm cosine schedule, 3 warmup epochs, EMA |
+| Trainer | `yolox.core.Trainer` 0.3.0, driven by `scripts/train.py` |
 | Hardware | RTX 4060 |
-| Training time | 759.2 s |
+| Training time | 1710.0 s, with other jobs sharing the CPU, so not a benchmark |
 | Artefacts | `.pt`, FP32 ONNX, FP16 ONNX, three INT8 ONNX variants |
 
-Training runs square and inference runs at the native aspect because mosaic
-augmentation and the pretrained weights expect a square, whilst padding a 5:3
-frame into a square at inference wastes a third of the compute on grey bars.
-YOLOv8 is fully convolutional so the two are compatible; both sides just have
-to stay multiples of 32.
+Unlike version 1, training and inference both run at the native aspect: YOLOX's
+multi-scale jitter keeps the aspect ratio, so there is no square resize and no
+grey bars at either end.
 
-### Augmentation, and one deliberate choice
+**What the export changes and why it is exact.**  YOLOX takes BGR in 0..255;
+the runtime feeds RGB in 0..1, as every backend and the INT8 calibrator
+already do.  `edgetrack.detect.yolox_net.fold_input_into_stem` scales the
+first convolution's weights by 255 and reverses their colour order, which is
+the same arithmetic in a different order.  The grid decode and the `obj * cls`
+scoring are built into the graph, so the output is `(1, 8, 5040)`, the layout
+`edgetrack.detect.base.decode_head` reads.  On Megvii's COCO weights the folded
+module and stock YOLOX agree to within float rounding.
 
-The schedule is the Ultralytics default with the colour jitter turned down
-hard: `hsv_s` and `hsv_v` at 0.3, `hsv_h` at 0.005.
+### Augmentation and one deliberate choice
+
+Mosaic, a horizontal flip, ten per cent translation and a scale of 0.6 to 1.4.
+No rotation, no shear, no mixup and **no colour jitter**.
 
 Instance colour is the only appearance cue the DeepSORT branch has on this
-dataset.  An aggressive HSV augmentation would teach the detector to ignore
-exactly the signal the tracker depends on, and a detector that is invariant to
-the thing the tracker needs is a pipeline arguing with itself.
-`tests/test_configs.py` fails if somebody raises it without reading this.
+dataset.  YOLOX's HSV augmentation has fixed gains (five hue steps, thirty of
+saturation and value) that would teach the detector to ignore exactly the
+signal the tracker depends on and a detector that is invariant to the thing
+the tracker needs is a pipeline arguing with itself.  Version 1 turned
+Ultralytics' jitter down hard for the same reason; YOLOX's cannot be turned
+down without patching it, so it is off.
 
 ### Accuracy
 
 | Split | mAP@0.5 | mAP@0.5:0.95 | P | R |
 | --- | ---: | ---: | ---: | ---: |
-| val (same palette as train) | 0.99042 | 0.89251 | 0.97948 | 0.9763 |
-| test (shifted palette) | 0.9727 | 0.8649 | 0.9597 | 0.9546 |
+| val (same palette as train) | 0.99391 | 0.90661 | | |
+| test (shifted palette) | 0.9776 | 0.8605 | 0.9540 | 0.9655 |
 
-The val row is Ultralytics' own validator; the test row is this repository's
-metric implementation, and `tests/test_backends.py` compares them on the same
-weights with a stated tolerance rather than assuming they agree.
+The val row is YOLOX's own evaluator, which is pycocotools; the test row is
+this repository's metric implementation and `tests/test_backends.py` feeds the
+same predictions to both and requires them to agree within a stated tolerance.
+
+**Against version 1.**  YOLOv8n scored 0.8649 mAP@0.5:0.95 on the same test
+split and YOLOX-Tiny scores 0.8605: **slightly worse at the strict IoU
+thresholds**, by 0.00446 and slightly better at mAP@0.5, 0.9776 against
+0.9727.  On val YOLOX-Tiny is ahead, 0.90661 against 0.89251, so the gap opens
+under the palette shift.
 
 Per class on test, mAP@0.5:0.95:
 
 | Class | FP32 | INT8 | Delta |
 | --- | ---: | ---: | ---: |
-| person | 0.9305 | 0.92754 | -0.00296 |
-| forklift | 0.90837 | 0.90071 | -0.00766 |
-| pallet | 0.83831 | 0.82784 | -0.01047 |
-| cone | 0.78261 | 0.7635 | -0.01911 |
+| person | 0.92745 | 0.89878 | -0.02867 |
+| forklift | 0.90504 | 0.87294 | -0.0321 |
+| pallet | 0.77845 | 0.75657 | -0.02188 |
+| cone | 0.83101 | 0.80886 | -0.02215 |
 
-The smallest class takes the largest quantisation hit, which is the usual
-pattern: a small object's activations occupy a smaller part of the calibrated
-range.
-
-`cone` is the weakest class in absolute terms too, at 0.78 against `person` at
-0.93.  Cones are the smallest objects in the scene and the most often fully
-occluded.
+`pallet` is now the weakest class, at 0.78; under YOLOv8n it was `cone`.
+Pallets are flat, low and often partly hidden behind forklifts and the
+strict-IoU loss against version 1 is almost all here.  `cone`, the smallest
+class, improved.  The INT8 loss is spread evenly across classes rather than
+concentrated on the smallest one, as it was before.
 
 ---
 
@@ -77,24 +95,32 @@ occluded.
 
 | Variant | How it is made | Size | mAP@0.5:0.95 |
 | --- | --- | ---: | ---: |
-| FP32 | ONNX export at opset 13 | 12.20 MB | 0.8649 |
-| FP16 | separate export from a half-precision module | 6.14 MB | 0.8615 |
-| INT8 | static QDQ from the FP32 graph, convolutions only, head in float | 3.40 MB | 0.8549 |
-| INT8 all-conv | as above with the head quantised too | 3.38 MB | 0.8193 |
-| INT8 all-ops | ONNX Runtime's defaults | 3.41 MB | 0.0000 |
+| FP32 | ONNX export at opset 13 | 20.30 MB | 0.8605 |
+| FP16 | separate export from a half-precision module | 10.21 MB | 0.8590 |
+| INT8 | static QDQ from the FP32 graph, convolutions only, head in float | 5.52 MB | 0.8343 |
+| INT8 all-conv | as above with the head quantised too | 5.53 MB | 0.8206 |
+| INT8 all-ops | ONNX Runtime's defaults | 5.58 MB | 0.0000 |
 
 INT8 calibration uses 256 training frames drawn with a fixed seed, through
-exactly the preprocessing the deployed model applies.  `docs/results.md`
-section 1 explains why the last row is what it is, and why it is shipped rather
-than deleted.
+exactly the preprocessing the deployed model applies.  The head left in float
+is YOLOX's nine output convolutions, class, box and objectness on each of three
+strides, found by name in the graph.  `docs/results.md` section 1 explains why
+the last row is what it is and why it is shipped rather than deleted.
 
-FP16 is a sibling export rather than a conversion of the FP32 graph, because
-`onnxconverter_common` produces an invalid model on this network; the docstring
-of `scripts/export_onnx.py` has the detail.
+**INT8 costs more than it did.**  0.0262 mAP@0.5:0.95 with the head in float,
+against about a point for YOLOv8n (0.8549 against 0.86495).  The files are larger too: YOLOX-Tiny has more
+parameters, so every variant is about two thirds larger than its YOLOv8n
+counterpart.
+
+FP16 is a sibling export rather than a conversion of the FP32 graph; the
+docstring of `scripts/export_onnx.py` has the detail.
 
 ---
 
 ## The appearance embedding
+
+Unchanged from version 1: it is trained on ground-truth crops and does not
+depend on the detector.
 
 | | |
 | --- | --- |
@@ -118,7 +144,7 @@ does not; `docs/tracking.md` has the sizing argument and the numbers for the
 larger version that was tried first.
 
 **It does not beat a colour histogram at the job it was built for.**  On the
-test split, DeepSORT with this embedding makes 32 identity switches and
+test split, DeepSORT with this embedding makes 33 identity switches and
 DeepSORT with a parameter-free HSV histogram makes 19.  That is a domain-gap
 result and it is written up in `docs/tracking.md` rather than buried.
 
@@ -133,31 +159,36 @@ dataset it was trained on.  Nothing else.
 
 Any real camera.  Any safety-relevant decision.  Any claim about people: the
 `person` class detects a rendered figure of a person and has never seen a
-photograph.
+photograph during fine-tuning.
 
 ## Ethical considerations
 
-The training data contains no photographs, no personal data and no real people,
-so there is no demographic bias in the training set to report because there is
-no demographic in it.  That is not a claim of fairness; a model trained this way
-has simply never encountered the question, and deploying it anywhere near real
-people would require starting the analysis from scratch on real data.
+The fine-tuning data contains no photographs, no personal data and no real
+people, so there is no demographic bias in it to report because there is no
+demographic in it.  The COCO checkpoint fine-tuning starts from was trained by
+Megvii on photographs, including of people and inherits whatever biases COCO
+carries; nothing here measures them.  That is not a claim of fairness; a model
+trained this way has simply never been tested on the question and deploying it
+anywhere near real people would require starting the analysis from scratch on
+real data.
 
 ## Licence
 
-The repository's code is MIT.  The weights are not: fine-tuning started from
-Ultralytics' AGPL-3.0 `yolov8n.pt`, so the fine-tuned checkpoint and every
-export of it carry an AGPL-3.0 obligation and closed commercial use needs an
-Ultralytics Enterprise Licence or a different detector.  `docs/licences.md`
-states the obligation and `STATUS.md` tracks the swap to an Apache-2.0
-detector.
+The repository's code is MIT.  The detector weights are **Apache-2.0**: they
+are a modification of Megvii's Apache-2.0 YOLOX-Tiny COCO checkpoint, made with
+Megvii's Apache-2.0 training code and closed commercial use is permitted.
+Redistributing them means including the licence text,
+`LICENSES/YOLOX-Apache-2.0.txt` and the attribution to Megvii and saying that
+the files were modified; `docs/licences.md` has the detail and the one point
+worth confirming with counsel.
 
 ## Provenance
 
 | Artefact | SHA-256 |
 | --- | --- |
-| `yolov8n_edgetrack_fp32.onnx` | in `models/yolov8n_edgetrack_fp32.json` |
-| `yolov8n_edgetrack_fp16.onnx` | in `models/yolov8n_edgetrack_fp16.json` |
+| `yolox_tiny.pth`, the starting point | in `configs/train.yaml`, checked before training |
+| `yolox_tiny_edgetrack_fp32.onnx` | in `models/yolox_tiny_edgetrack_fp32.json` |
+| `yolox_tiny_edgetrack_fp16.onnx` | in `models/yolox_tiny_edgetrack_fp16.json` |
 | INT8 variants | in `models/quantisation.json` |
 | `reid_edgetrack.onnx` | in `models/reid_edgetrack.json` |
 

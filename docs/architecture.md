@@ -12,7 +12,7 @@
                             ▼                      ▼
                    ┌─────────────────┐    ┌──────────────────────┐
                    │ scripts/train   │    │  ground truth for    │
-                   │ YOLOv8n         │    │  MOTA / IDF1 / IDsw  │
+                   │ YOLOX-Tiny      │    │  MOTA / IDF1 / IDsw  │
                    └────────┬────────┘    └───────────┬──────────┘
                             │ .pt                     │
               ┌─────────────┴──────────────┐          │
@@ -66,13 +66,13 @@ directory of images with one label file each; tracking evaluation wants whole
 sequences with MOTChallenge ground truth.  Both are written from the same
 generator in the same pass, so they cannot disagree about where an object was.
 
-**The runtime imports neither torch nor ultralytics.**  `edgetrack.reid_net` is
-the only module that imports torch at module scope and nothing in the runtime
-path reaches it.  See `docs/licences.md`.
+**The runtime imports neither torch nor yolox.**  `edgetrack.reid_net` and
+`edgetrack.detect.yolox_net` are the only modules that import torch at module
+scope and nothing in the runtime path reaches either.  See `docs/licences.md`.
 
 **Detections are computed once and shared.**  `scripts/eval_tracking.py`
 detects each frame once and feeds the identical list to every tracker in the
-run, and `scripts/tune_tracker.py` caches detections across the whole parameter
+run and `scripts/tune_tracker.py` caches detections across the whole parameter
 sweep.  A comparison where each tracker ran its own detector would be comparing
 two things at once.
 

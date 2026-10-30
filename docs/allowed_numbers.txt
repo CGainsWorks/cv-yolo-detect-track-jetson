@@ -21,11 +21,11 @@
 1.4         # the py-motmetrics version
 
 # --- thresholds and configuration, all also in configs/ ---
-0.5         # IoU threshold for MOT matching, and the DeepSORT cosine gate
+0.5         # IoU threshold for MOT matching and the DeepSORT cosine gate
 0.35        # minimum visibility for a detection label
 0.25        # detector confidence threshold at deployment
 0.001       # confidence floor for the mAP integration
-0.6         # DeepSORT max_iou_distance, and NMS IoU threshold
+0.6         # DeepSORT max_iou_distance and NMS IoU threshold
 0.7         # ByteTrack match_thresh
 0.3         # HSV saturation and value augmentation limit
 0.005       # HSV hue augmentation limit
@@ -37,13 +37,13 @@
 0.68        # rounded within-identity 95th percentile, quoted in prose
 
 # --- sizes stated in megabytes, derived from the byte counts in the JSON ---
-12.20       # FP32 ONNX
-6.14        # FP16 ONNX
-3.40        # INT8 ONNX, head in float
-3.38        # INT8 ONNX, all convolutions
-3.41        # INT8 ONNX, all operators
+20.30       # FP32 ONNX
+10.21       # FP16 ONNX
+5.52        # INT8 ONNX, head in float
+5.53        # INT8 ONNX, all convolutions
+5.58        # INT8 ONNX, all operators
 0.46        # re-ID ONNX
-4.9         # YOLOv8n GFLOPs, from the Ultralytics model summary
+9.14        # YOLOX-Tiny GFLOPs at 640x384, from YOLOX's model summary in the training log
 1.2         # parameter count in millions of the discarded larger re-ID network
 0.1         # parameter count in millions of the shipped re-ID network
 0.5         # GFLOPs per crop of the discarded larger re-ID network

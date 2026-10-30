@@ -1,4 +1,4 @@
-# The Jetson, and the fact that there isn't one
+# The Jetson and the fact that there isn't one
 
 **Nothing in this repository has run on a Jetson.**  No latency number in
 `benchmarks/results.csv` or anywhere else came from edge hardware.  Every
@@ -19,7 +19,7 @@ the first build, when other containers were using the CPU, so treat them as
 indicative only.
 
 That is a real gap and this page is about the shape of it: what exists, what
-would have to happen, and which of the conclusions in `docs/results.md` would
+would have to happen and which of the conclusions in `docs/results.md` would
 survive contact with the board.
 
 ---
@@ -55,7 +55,7 @@ python3 -m venv --system-site-packages .venv
 pip install -r requirements-jetson.txt
 
 # Clocks pinned, or the numbers are a lottery.  Jetson clocks scale with
-# thermals and with the governor, and an unpinned board can report a
+# thermals and with the governor and an unpinned board can report a
 # forty percent spread between two runs of the same benchmark.
 sudo nvpmodel -m 0        # MAXN
 sudo jetson_clocks
@@ -79,33 +79,36 @@ vanishing from the table.
 
 ---
 
-## Which conclusions would survive, and which would not
+## Which conclusions would survive and which would not
 
 **Would survive.**  The accuracy column.  mAP is a property of the arithmetic,
 not of the runtime, so the FP32-to-FP16 gap measured here is what FP16 costs
-anywhere.  The finding that quantising YOLOv8's detection head destroys the
-class scores is about where the dynamic range is in the graph, and TensorRT
-would hit the same wall for the same reason, which is why
+anywhere.  The finding that quantising the detection head's output
+convolutions costs accuracy and that quantising the whole head arithmetic
+destroys the class scores, is about where the dynamic range is in the graph
+and TensorRT would hit the same wall for the same reason, which is why
 `scripts/export_tensorrt.py` keeps FP16 enabled alongside INT8 so that layers
 TensorRT declines to quantise fall back to half rather than to full precision.
 
-**Would not survive.**  Everything in the latency column, and not by a small
+**Would not survive.**  Everything in the latency column and not by a small
 factor.  An Orin Nano is roughly a twentieth of an RTX 4060 in raw throughput,
-its memory is shared with the CPU rather than dedicated, and TensorRT fuses
+its memory is shared with the CPU rather than dedicated and TensorRT fuses
 convolution, batch normalisation and activation into single kernels in a way
 ONNX Runtime's CPU provider does not.  The *ordering* of the precisions would
-probably hold; the ratios would not, and the ratios are the interesting part.
+probably hold; the ratios would not and the ratios are the interesting part.
 
 **Answered on the desktop and expected to carry over.**  The INT8 accuracy on
 TensorRT.  It was unknown when this page was first written; the desktop run
 measured it and it landed on the wrong side: TensorRT's entropy calibrator
-with implicit quantisation quantises the detection head and loses 0.06408
-mAP@0.5:0.95, more than ONNX Runtime's head-excluded INT8.  The same TensorRT
+with implicit quantisation quantises the detection head and loses 0.04082
+mAP@0.5:0.95 on YOLOX-Tiny, more than ONNX Runtime's head-excluded INT8 (and
+less than the 0.06408 it lost on the YOLOv8n detector this repository used
+before).  The same TensorRT
 version on a board does the same arithmetic, so the accuracy should carry over
 closely; the kernels it picks will differ, so not bit for bit.
 
 Also unknown: whether the tracker keeps up.  The published end-to-end numbers
-show the detector dominating on a desktop, but the appearance encoder runs once
+show the detector dominating on a desktop but the appearance encoder runs once
 per detection rather than once per frame, so on a board a third the speed with
 eight objects in shot the balance could invert.  The benchmark reports the
 stages separately for exactly this reason.
@@ -114,14 +117,15 @@ stages separately for exactly this reason.
 
 ## What a Jetson would change about the design
 
-Two things are sized for hardware that has not been measured, and both are
+Two things are sized for hardware that has not been measured and both are
 guesses until it has been:
 
-* **YOLOv8n at 640x384.**  Chosen because an Orin Nano has 8 GB shared between
-  the GPU, the ROS2 stack and the operating system.  If the board turns out to
-  have headroom, `yolov8s` is a config change; if it does not, the input drops
-  to 512x320 before the model does, because resolution is cheaper to give up
-  than capacity on small objects.
+* **YOLOX-Tiny at 640x384.**  Chosen because an Orin Nano has 8 GB shared
+  between the GPU, the ROS2 stack and the operating system and because it is
+  Apache-2.0 (`docs/licences.md`).  If the board turns out to have headroom,
+  YOLOX-S is a config change (`architecture: yolox_s`); if it does not, the
+  input drops to 512x320 before the model does, because resolution is cheaper
+  to give up than capacity on small objects.
 * **The appearance encoder at 0.1 M parameters.**  Deliberately small because
   its cost multiplies by the object count.  On a desktop that decision was
   measurable but not urgent; on a board it is the difference between DeepSORT

@@ -1,7 +1,7 @@
 # The ROS2 node
 
 `edgetrack.ros2.node` publishes detections, tracks, trajectories and an
-annotated image.  It is a real node running under a real rclpy, and the `ros2`
+annotated image.  It is a real node running under a real rclpy and the `ros2`
 job in `.github/workflows/ci.yml` proves it on every push by bringing up a
 `ros:humble-ros-base` container, launching the node and subscribing to the
 topics with `tests/ros2_subscriber_check.py`.
@@ -38,7 +38,7 @@ source /opt/ros/humble/setup.bash
 export PYTHONPATH=src
 python3 -m edgetrack.ros2.node --ros-args \
   -p source:=synth:7 \
-  -p model:=models/yolov8n_edgetrack_fp32.onnx \
+  -p model:=models/yolox_tiny_edgetrack_fp32.onnx \
   -p tracker:=bytetrack
 ```
 
@@ -52,7 +52,7 @@ Parameters, all with defaults:
 | Parameter | Default | Notes |
 | --- | --- | --- |
 | `source` | `synth:7` | as above |
-| `model` | `models/yolov8n_edgetrack_fp32.onnx` | must exist; the node refuses to start otherwise |
+| `model` | `models/yolox_tiny_edgetrack_fp32.onnx` | must exist; the node refuses to start otherwise |
 | `backend` | `onnx` | `onnx`, `torch` or `tensorrt` |
 | `tracker` | `bytetrack` | `bytetrack` or `deepsort` |
 | `appearance` | `histogram` | `histogram` or `reid`; only read for DeepSORT |
@@ -74,14 +74,14 @@ timeout wrapper: on a video file or a synthetic sequence it stops by itself.
 
 **`vision_msgs` changed shape between 3.x and 4.x.**  In the 4.x series that
 ships with Humble, `ObjectHypothesisWithPose.id` became `hypothesis.class_id`
-and turned from an integer into a string, and `BoundingBox2D.center` gained a
+and turned from an integer into a string and `BoundingBox2D.center` gained a
 nested `position`.  The node handles both by duck typing rather than by pinning
 a version, because a Jetson running whatever `vision_msgs` its Jetpack shipped
 is the normal case rather than the exception.
 
 **`cv_bridge` is not used.**  The annotated image is built by hand in
 `edgetrack.ros2.messages.image_payload`.  On a Jetson image `cv_bridge` pulls a
-second OpenCV in beside the one already installed, and the conversion is six
+second OpenCV in beside the one already installed and the conversion is six
 lines.  The one subtlety is that a cropped or sliced frame is not C-contiguous
 and `tobytes` on it would serialise the wrong memory, so the payload builder
 copies when it has to; `tests/test_ros2_messages.py` pins that.
@@ -97,12 +97,12 @@ maybe an hour of work and nothing about it is interesting; it is left undone
 rather than half-done.
 
 No `tf2` frames and no calibration.  The trajectory markers are in image pixels
-with `z` fixed at zero, and the frame is named `camera_optical` to make the
+with `z` fixed at zero and the frame is named `camera_optical` to make the
 pixel convention explicit rather than to imply metres.  Projecting tracks onto
 a ground plane needs camera intrinsics and an extrinsic calibration, neither of
 which exists for a procedurally generated scene.
 
 No composable node and no intra-process transport.  On a Jetson the annotated
-image topic at 15 Hz and 640x384 is about 11 MB/s through the middleware, and
+image topic at 15 Hz and 640x384 is about 11 MB/s through the middleware and
 a composed node with intra-process comms would avoid that copy.  Worth doing
 when there is a board to measure it on.

@@ -1,7 +1,9 @@
 # Licences
 
-This repository is MIT.  The interesting part is the boundary that keeps it
-that way, because the tool that trains the detector is not.
+This repository is MIT.  The detector and the weights it ships are Apache-2.0,
+end to end, so nothing in the deployed system carries a copyleft obligation.
+That was not always true and the history is kept below, because the reason the
+detector changed is the useful part.
 
 ---
 
@@ -19,64 +21,110 @@ suite rather than derived from it.
 
 ---
 
-## Ultralytics, which is AGPL-3.0
+## The detector: YOLOX-Tiny, Apache-2.0
 
-Ultralytics YOLOv8 is AGPL-3.0.  It is used here to fine-tune the detector and
-to export the ONNX graphs, and it appears in `requirements-train.txt` and in
-`docker/Dockerfile.train`.
+The detector is YOLOX-Tiny (Ge et al., 2021) from Megvii's `yolox` package,
+fine-tuned from Megvii's COCO checkpoint `yolox_tiny.pth`.
 
-**The published detector weights carry an AGPL-3.0 obligation and that blocks
-closed commercial use.**  Fine-tuning starts from Ultralytics' pretrained
-`yolov8n.pt` (`configs/model.yaml`), which Ultralytics distributes under
-AGPL-3.0.  The fine-tuned checkpoint and every graph exported from it
-(`yolov8n_edgetrack.pt`, the FP32, FP16 and INT8 ONNX files in the Release and
-any TensorRT engine built from them) are derived from those weights.
-Ultralytics' stated position is that models trained or fine-tuned with its
-software and weights fall under AGPL-3.0 unless the user holds an Ultralytics
-Enterprise Licence.  An earlier version of this page argued the opposite, that
-the weights are mere program output and said Ultralytics agreed.  That was
-wrong on the second point and is not a safe basis for the first, so it has
-been withdrawn.
+| Part | Licence | Where it comes from |
+| --- | --- | --- |
+| `yolox` 0.3.0, the training and export code | Apache-2.0, Copyright 2021-2022 Megvii Inc. | PyPI, `requirements-yolox.txt` |
+| `yolox_tiny.pth`, the COCO starting point | Apache-2.0, as a release asset of the YOLOX repository | GitHub release `0.1.1rc0` of `Megvii-BaseDetection/YOLOX`; URL and SHA-256 in `configs/train.yaml` |
+| `yolox_tiny_edgetrack.pt` and every ONNX graph and engine built from it | Apache-2.0, as a derivative of the above | `scripts/train.py`, `scripts/export_onnx.py`, `scripts/quantize_onnx.py` |
 
-What that means in practice:
+**Closed commercial use is permitted.**  Apache-2.0 asks three things of anyone
+who redistributes the weights or a product containing them: a copy of the
+licence, the attribution notices and a statement that the files were modified.
+The licence text as Megvii ships it, with its copyright line, is
+[`LICENSES/YOLOX-Apache-2.0.txt`](../LICENSES/YOLOX-Apache-2.0.txt).  The YOLOX
+repository has no NOTICE file, so there is no NOTICE text to carry forward.
+The fine-tuned weights are a modification of Megvii's: fine-tuned on the
+dataset in this repository, with the input normalisation folded into the stem
+convolution and the box decode built into the exported graph
+(`edgetrack.detect.yolox_net`).  Apache-2.0 also carries an express patent
+licence from the contributors, which MIT does not.
 
-* Anyone deploying these weights, including over a network, must meet
-  AGPL-3.0: the complete corresponding source of the deployed system, under
-  AGPL-3.0, to every user who interacts with it.
-* A closed or commercial deployment needs either an Ultralytics Enterprise
-  Licence or a detector with no Ultralytics lineage.
-* The MIT licence on this repository covers the code written here.  It does
-  not relicense the weights and cannot.
+**One thing to check rather than assume.**  Megvii publishes the checkpoints as
+release assets of an Apache-2.0 repository and states no separate terms for
+them, so this repository reads them as Apache-2.0.  That is the plain reading
+and the one the YOLOX community works on but it is a reading of what Megvii
+published rather than a statement Megvii made about the weights specifically.
+Anyone shipping a product on them should have that confirmed by their own
+counsel, as they would for any third-party model.
 
-The fix is a detector with a permissive licence end to end, weights included:
-YOLOX, RTMDet or D-FINE, all Apache-2.0.  `STATUS.md` carries it as an open
-item.  It has not been done in this pass, so the detector and its numbers are
-unchanged.
+**The training data behind the starting point.**  The COCO checkpoint was
+trained by Megvii on COCO, whose annotations are CC BY 4.0 and whose images are
+Flickr photographs under their own terms.  That is a provenance question every
+COCO-pretrained detector shares, YOLOv8 included and it is not a licence on
+the weights.  No COCO image or annotation is used, stored or redistributed by
+this repository; fine-tuning uses only the generated dataset.
 
-**What the runtime boundary does and does not achieve.**  The runtime loads an
-ONNX graph through ONNX Runtime, or a plan file through TensorRT, and imports
-neither ultralytics nor torch.  That keeps Ultralytics' *code* out of the
-deployed image, which is worth having: it is the part a swap to an Apache-2.0
-detector would not need to touch.  It does not remove the obligation attached
-to the weights, which travel inside the ONNX graph whichever runtime loads it.
+### Why YOLOX, rather than RTMDet or D-FINE
 
-The code boundary is enforced rather than asserted:
+All three are Apache-2.0, code and weights.  YOLOX was chosen because it is the
+one that fits this repository without changing anything it measures:
 
-* `requirements.txt` contains neither torch nor ultralytics, and
+* **Same head contract.**  YOLOX is anchor-free on the stride 8, 16 and 32
+  grids YOLOv8 used, so at 640x384 it has the same 5040 anchors and with the
+  grid decode and `obj * cls` scoring done in the exported graph its output is
+  the `(1, 4 + classes, 5040)` tensor `edgetrack.detect.base.decode_head`
+  already consumed.  Every backend, the INT8 quantiser, the TensorRT builder
+  and both trackers are unchanged.
+* **ByteTrack's own detector.**  The ByteTrack paper used YOLOX.  A dense,
+  NMS-based detector with a long tail of low-confidence boxes is what the
+  second association pass is designed around; a set-prediction detector such
+  as D-FINE emits a fixed number of queries and no such tail.
+* **A plain convolutional graph.**  Conv, Sigmoid, Mul and Concat, which ONNX
+  Runtime's static quantiser and TensorRT's INT8 calibrator both handle and
+  which keeps the INT8 ablation comparable with the previous one.  D-FINE's
+  deformable attention samples features with grid sampling, the classic
+  failure case for implicit INT8 quantisation.
+* **The lightest toolchain.**  `yolox` is pure PyTorch and installs from PyPI.
+  RTMDet lives in MMDetection, which needs `mmcv` with compiled operators built
+  against a specific torch and CUDA pair, plus `mmdeploy` for the export.
+
+What it costs: YOLOX-Tiny is the nearest size class to YOLOv8n but not the
+same one.  It has 5,033,739 parameters against 3,006,428 and the ONNX
+graph is larger.  [`MODEL_CARD.md`](MODEL_CARD.md) and the README have the
+measured differences, including where the new detector is worse.
+
+---
+
+## History: Ultralytics YOLOv8, AGPL-3.0
+
+Until October 2026 the detector was Ultralytics YOLOv8n, fine-tuned from
+Ultralytics' `yolov8n.pt`.  Ultralytics distributes the library and its
+pretrained weights under AGPL-3.0 and its stated position is that models
+trained or fine-tuned with them fall under AGPL-3.0 unless the user holds an
+Ultralytics Enterprise Licence.  The fine-tuned weights therefore carried an
+AGPL-3.0 obligation, which blocked closed commercial use; keeping the library
+out of the runtime image did not change that, because the obligation travels
+with the weights inside the ONNX graph.  Replacing the detector was the fix.
+
+The YOLOv8 artefacts are still attached to GitHub Release `v0.1.0`, where they
+were published and remain under that obligation.  Nothing in the current code
+or results uses them.  `ultralytics` stays on the forbidden-import list in
+`tests/test_runtime_boundary.py` and in the `docker` CI job, so it cannot come
+back by accident.
+
+---
+
+## The runtime boundary
+
+The runtime loads an ONNX graph through ONNX Runtime, or a plan file through
+TensorRT and imports neither torch nor yolox.  With an Apache-2.0 detector that
+is no longer a licence boundary; it is a size boundary, because torch is two
+gigabytes of wheel the deployed image has no use for.  It is enforced rather
+than asserted:
+
+* `requirements.txt` contains neither torch nor yolox and
   `tests/test_runtime_boundary.py` fails if either appears.
 * Every runtime module is imported in a fresh interpreter and `sys.modules` is
-  checked afterwards, so an accidental import anywhere in the runtime path
-  fails the suite.
+  checked afterwards; `edgetrack.detect.yolox_net`, which imports torch, has
+  its own test that the pipeline cannot reach it.
 * `docker/Dockerfile.runtime` builds without them and the `docker` job in CI
-  runs `import torch` and `import ultralytics` inside the built image and fails
-  if either succeeds.
-
-The swap is contained.  The only Ultralytics-specific steps are training and
-`model.export(format="onnx")`.  A detector whose graph emits a `(1, 4 +
-num_classes, anchors)` head is consumed without modification, because
-`edgetrack.detect.base.decode_yolov8` decodes that shape and nothing above it
-knows which trainer produced it.  YOLOX and RTMDet emit different heads, so a
-second decoder in `edgetrack.detect.base` is the likely size of the change.
+  runs `import torch`, `import yolox` and `import ultralytics` inside the built
+  image and fails if any succeeds.
 
 ---
 
@@ -86,13 +134,18 @@ second decoder in `edgetrack.detect.base` is the likely size of the change.
 | --- | --- | --- |
 | ONNX Runtime | MIT | runtime |
 | ONNX | Apache-2.0 | export |
+| onnxslim | MIT | export, graph simplification |
 | NumPy | BSD-3-Clause | runtime |
 | SciPy | BSD-3-Clause | runtime, for the Hungarian solver |
 | OpenCV (opencv-python-headless) | Apache-2.0 | runtime |
 | PyYAML | MIT | runtime |
 | imageio | BSD-2-Clause | the README GIF |
 | tqdm | MPL-2.0 and MIT | runtime |
-| PyTorch | BSD-3-Clause | training only |
+| PyTorch, torchvision | BSD-3-Clause | training and export only |
+| pycocotools | BSD-2-Clause | YOLOX's evaluator during training and a test cross-check |
+| loguru, tabulate, thop | MIT | YOLOX's import-time dependencies, training only |
+| psutil | BSD-3-Clause | YOLOX's import-time dependency, training only |
+| TensorBoard | Apache-2.0 | YOLOX's training log |
 | py-motmetrics | MIT | tests only |
 | TensorRT | NVIDIA proprietary | Jetpack on a Jetson; NVIDIA's container (`docker/Dockerfile.tensorrt`) and the pinned PyPI wheel (`requirements-tensorrt.txt`) on a desktop and in CI |
 | pycuda | MIT | the TensorRT backend and the INT8 calibrator |
@@ -112,10 +165,3 @@ The dataset is generated by `src/edgetrack/data/synth.py` from seeds in
 person, so there is no dataset licence to inherit and no personal data to
 handle.  `data/DATASET_CARD.md` says the same thing at more length and is
 honest about what that costs in realism.
-
-The pretrained COCO checkpoint that fine-tuning starts from is distributed by
-Ultralytics under AGPL-3.0; `scripts/train.py` downloads it on first run.  It is
-not redistributed here as such but the fine-tuned weights in the Release are
-derived from it, which is the obligation described above.  COCO itself is CC BY
-4.0 for the annotations, with the images under their original Flickr terms.
-No COCO image or annotation appears in this repository.

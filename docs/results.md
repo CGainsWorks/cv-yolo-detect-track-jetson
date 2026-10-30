@@ -3,10 +3,16 @@
 Every number on this page comes from a JSON file in `results/published/` and
 every one of those files is written by a script in `scripts/`.
 `scripts/check_docs.py` fails the build if a number appears here that is not in
-one of them, and the tables below are generated rather than typed.
+one of them and the tables below are generated rather than typed.
 
 Regenerate the lot with `make experiments` on a machine with a CUDA GPU, then
 `make publish`.
+
+**The detector is YOLOX-Tiny.**  It replaced YOLOv8n, whose weights carried an
+AGPL-3.0 obligation (`docs/licences.md`).  The YOLOv8n numbers are kept beside
+the new ones in `results/published/detector_comparison.json`, read from the
+last commit before the swap by `scripts/compare_detectors.py` and the README
+summarises where the new detector is better and where it is worse.
 
 **The hardware caveat, up front.**  There is no Jetson.  Every latency number
 was taken on a desktop with an RTX 4060 and a Ryzen 7 5700X.  `docs/jetson.md`
@@ -23,40 +29,44 @@ the differences are differences in the arithmetic.
 
 | Variant | mAP@0.5 | mAP@0.5:0.95 | P | R | file size |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| FP32 | 0.9727 | 0.8649 | 0.9597 | 0.9546 | 12.20 MB |
-| FP16 | 0.9727 | 0.8615 | 0.9596 | 0.9547 | 6.14 MB |
-| INT8, head in float | 0.9700 | 0.8549 | 0.9638 | 0.9487 | 3.40 MB |
-| INT8, head quantised | 0.9698 | 0.8193 | 0.9618 | 0.9490 | 3.38 MB |
-| INT8, everything quantised | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 3.41 MB |
+| FP32 | 0.9776 | 0.8605 | 0.9540 | 0.9655 | 20.30 MB |
+| FP16 | 0.9771 | 0.8590 | 0.9540 | 0.9651 | 10.21 MB |
+| INT8, head in float | 0.9771 | 0.8343 | 0.9538 | 0.9643 | 5.52 MB |
+| INT8, head quantised | 0.9771 | 0.8206 | 0.9537 | 0.9649 | 5.53 MB |
+| INT8, everything quantised | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 5.58 MB |
 
 Read the last three rows together, because the gap between them is the result.
 
 **Quantising everything destroys the model.**  `quantize_static` with its
-default op list produces a graph that loads, runs at 65 FPS and detects
-nothing.  Every class score comes out identically zero whilst the box
-coordinates stay within a couple of pixels of the FP32 ones, which is what
-makes the failure hard to spot: the geometry looks healthy.  The cause is
-YOLOv8's head, which ends in a Sigmoid over the class logits and a chain of
-Softmax, Slice, Sub, Add, Div and Mul that turns a distribution into box
-coordinates.  Quantising that chain to uint8 puts a coarse step on tensors
-whose useful range spans orders of magnitude.
+default op list produces a graph that loads, runs at 67.6 FPS end to end and
+detects nothing.  This is the second detector on which that has happened.
+YOLOX's head ends in a Sigmoid over the objectness and class logits, an Exp on
+the box size, the Add and Mul that place each box on its grid cell and a Mul of
+objectness into the class scores.  Quantising that chain to uint8 puts one
+coarse step across tensors whose useful range spans orders of magnitude: box
+centres run to 640 pixels while the scores that decide a detection live
+between 0 and 1.  On YOLOv8n's head, whose tail is a distribution-focal-loss
+softmax, the same default failed in the same way.
 
 **Restricting quantisation to convolutions recovers almost all of it**, at a
-cost of 0.04564 mAP50-95.
+cost of 0.03986 mAP50-95.
 
-**Leaving the head's seven output convolutions in float recovers most of the
-rest.**  The cost against FP32 falls to 0.01005 mAP50-95, and the file grows by
-22 KB.  The seven nodes are found from the graph structure by
-`scripts/quantize_onnx.py` rather than hard-coded, so the exclusion keeps
-matching if the architecture changes.
+**Leaving the head's nine output convolutions in float recovers some of the
+rest.**  The cost against FP32 falls to 0.0262 mAP50-95 and the file grows by
+11 KB.  The nine nodes, class, box and objectness on each of three strides,
+are found from the graph structure by `scripts/quantize_onnx.py` rather than
+hard-coded, so the exclusion keeps matching if the architecture changes.  It
+recovers less than it did on YOLOv8n, where the same exclusion brought the
+cost down to a point: on YOLOX most of the INT8 loss is in the backbone and
+neck rather than the head.
 
 The per-class breakdown says where the loss lands.  Between FP32 and the
-published INT8 model, `person` drops 0.00296 and `cone` drops 0.01911; the smallest
-class takes the largest hit, which is what quantisation usually does, because a
-small object's activations occupy a smaller part of the calibrated range.
+published INT8 model every class drops by between 0.02188 (`pallet`) and
+0.0321 (`forklift`), so the loss is spread evenly rather than concentrated on
+the smallest class as it was on YOLOv8n.
 
-FP16 costs 0.00344 mAP50-95 and halves the file.  On this evidence FP16 is
-close to free and INT8 costs about a point.
+FP16 costs 0.00144 mAP50-95 and halves the file.  On this evidence FP16 is
+free and INT8 through ONNX Runtime costs about two and a half points.
 
 ---
 
@@ -67,13 +77,13 @@ close to free and INT8 costs about a point.
 
 | variant | backend | precision | mAP@0.5 | mAP@0.5:0.95 | inference p50 | inference p95 | end to end p50 | end-to-end FPS |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `onnx-cpu-fp32` | onnxruntime | fp32 | 0.9727 | 0.8649 | 15.69 ms | 17.32 ms | 21.71 ms | 45.9 |
-| `onnx-cpu-fp16` | onnxruntime | fp16 | 0.9727 | 0.8615 | 18.59 ms | 20.98 ms | 24.94 ms | 39.7 |
-| `onnx-cpu-int8` | onnxruntime | int8 | 0.9700 | 0.8549 | 16.88 ms | 19.82 ms | 22.55 ms | 44.2 |
-| `onnx-cpu-int8-allconv` | onnxruntime | int8 | 0.9698 | 0.8193 | 15.28 ms | 17.48 ms | 21.32 ms | 47.1 |
-| `onnx-cpu-int8-allops` | onnxruntime | int8 | 0.0000 | 0.0000 | 11.81 ms | 12.93 ms | 15.49 ms | 65.8 |
-| `torch-cuda-fp32` | pytorch | fp32 | n/a | n/a | 8.93 ms | 9.84 ms | 13.56 ms | 72.2 |
-| `torch-cuda-fp16` | pytorch | fp16 | n/a | n/a | 11.67 ms | 13.07 ms | 16.51 ms | 58.3 |
+| `onnx-cpu-fp32` | onnxruntime | fp32 | 0.9776 | 0.8605 | 18.00 ms | 22.55 ms | 23.43 ms | 42.2 |
+| `onnx-cpu-fp16` | onnxruntime | fp16 | 0.9771 | 0.8590 | 20.55 ms | 25.48 ms | 25.38 ms | 38.6 |
+| `onnx-cpu-int8` | onnxruntime | int8 | 0.9771 | 0.8343 | 16.11 ms | 18.13 ms | 21.24 ms | 46.4 |
+| `onnx-cpu-int8-allconv` | onnxruntime | int8 | 0.9771 | 0.8206 | 16.27 ms | 18.84 ms | 21.37 ms | 46.2 |
+| `onnx-cpu-int8-allops` | onnxruntime | int8 | 0.0000 | 0.0000 | 11.74 ms | 13.48 ms | 14.58 ms | 67.6 |
+| `torch-cuda-fp32` | pytorch | fp32 | n/a | n/a | 10.65 ms | 11.08 ms | 14.82 ms | 67.3 |
+| `torch-cuda-fp16` | pytorch | fp16 | n/a | n/a | 13.69 ms | 14.23 ms | 18.08 ms | 55.3 |
 <!-- END generated:headline -->
 
 The TensorRT rows are in section 3.  They were measured in NVIDIA's container
@@ -85,61 +95,63 @@ sit in their own table with the stack they came from.
 
 | backend | provider | variant | precision | mAP@0.5:0.95 delta | inference p50 speedup |
 | --- | --- | --- | --- | ---: | ---: |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-fp16` | fp16 | -0.00344 | 0.84x |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8` | int8 | -0.01005 | 0.93x |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allconv` | int8 | -0.04564 | 1.03x |
-| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allops` | int8 | -0.86495 | 1.33x |
-| pytorch | cuda | `torch-cuda-fp16` | fp16 | n/a | 0.76x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-fp16` | fp16 | -0.00144 | 0.88x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8` | int8 | -0.02620 | 1.12x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allconv` | int8 | -0.03986 | 1.11x |
+| onnxruntime | CPUExecutionProvider | `onnx-cpu-int8-allops` | int8 | -0.86049 | 1.53x |
+| pytorch | cuda | `torch-cuda-fp16` | fp16 | n/a | 0.78x |
 <!-- END generated:precision_delta -->
 
-Three things in that table are worth stopping on, and two of them are
+Three things in that table are worth stopping on and two of them are
 awkward.
 
-**FP16 is slower than FP32 on the CPU.**  0.84 times the speed.  That is
+**FP16 is slower than FP32 on the CPU.**  0.88 times the speed.  That is
 correct and expected: an x86 CPU has no native half-precision arithmetic, so
 ONNX Runtime inserts casts around every operator and pays for them.  The FP16
 graph exists for a device that does have half-precision units.  Quoting the CPU
 FP16 row as a speedup would be nonsense, so it is quoted as a slowdown.
 
-**INT8 barely helps on the CPU either.**  1.03 times at best.  The reason is in
-the next section.
+**INT8 helps a little on the CPU.**  About a tenth, more than it managed on
+YOLOv8n, because YOLOX-Tiny's convolutions are wider and give the integer
+kernels more to do per launch.  The reason it is not more is in the next
+section.
 
-**FP16 is slower than FP32 on the GPU as well.**  0.76 times, which for a
+**FP16 is slower than FP32 on the GPU as well.**  0.78 times, which for a
 tensor-core GPU is backwards.  That is also the next section.
 
 ---
 
-## 3. Why the GPU numbers look wrong, and what it means for the Jetson
+## 3. Why the GPU numbers look wrong and what it means for the Jetson
 
-YOLOv8n is 4.9 GFLOPs.  An RTX 4060 does over ten TFLOPs of FP32.  A frame
-should take well under a millisecond of arithmetic and it takes 8.93.
+YOLOX-Tiny is 9.14 GFLOPs at 640x384 by YOLOX's own count.  An RTX 4060 does
+over ten TFLOPs of FP32.  A frame should take around a millisecond of
+arithmetic and it takes 10.65.
 
 `scripts/probe_launch_bound.py` settles it with two sweeps:
 
 | Sweep | Change | Time change |
 | --- | --- | ---: |
-| Batch 1 to batch 8 | 8x the work | 1.237x |
-| 640x384 to 1280x768 | 3.999x the pixels | 1.327x |
+| Batch 1 to batch 8 | 8x the work | 1.292x |
+| 640x384 to 1280x768 | 3.999x the pixels | 0.947x |
 
-Eight times the work in 1.24 times the wall clock, and four times the pixels in
-1.33.  The per-image time falls 6.466 times going from batch 1 to batch 8.  The
-network is not compute bound at batch 1; it is bound by kernel launch overhead.
-YOLOv8n is about a hundred layers and eager PyTorch launches each one
-separately, so a frame is a few hundred microseconds of arithmetic wrapped in
-several milliseconds of launches.
+Eight times the work in 1.29 times the wall clock and four times the pixels in
+no more time at all.  The per-image time falls 6.195 times going from batch 1
+to batch 8.  The network is not compute bound at batch 1; it is bound by
+kernel launch overhead.  YOLOX-Tiny is about a hundred layers and eager PyTorch
+launches each one separately, so a frame is around a millisecond of arithmetic
+wrapped in several milliseconds of launches.
 
 That explains FP16 being slower on both backends: half precision reduces the
-arithmetic per kernel and adds cast kernels, and when the arithmetic was never
-the bottleneck the trade is a loss.  It also explains INT8 buying almost
-nothing on the CPU, where the same per-operator overhead dominates a network of
-this size.
+arithmetic per kernel and adds cast kernels and when the arithmetic was never
+the bottleneck the trade is a loss.  It also explains INT8 buying little on the
+CPU, where the same per-operator overhead dominates a network of this size.
 
 **This is the strongest argument in the repository for why the Jetson
 measurement is the one that matters.**  Layer fusion and CUDA graphs are
 exactly what TensorRT does: an engine fuses convolution, batch normalisation
 and activation into single kernels and can replay the whole graph as one
 launch.  On a launch-bound workload that is not a marginal gain, it is the
-whole gain, and it is the reason a quantisation study run only on ONNX Runtime
+whole gain and it is the reason a quantisation study run only on ONNX Runtime
 and eager PyTorch cannot answer the question this project set out to ask.
 
 So the honest statement of the eager-backend result is: on this hardware, at
@@ -148,36 +160,40 @@ barely at all, because the latency is not where the precision lives.
 
 ### TensorRT on the same desktop GPU
 
-That argument has now been tested on the desktop, though not on a board.
 `make tensorrt-desktop` builds FP32, FP16 and INT8 engines in NVIDIA's TensorRT
 container and runs them through `edgetrack.detect.trt_backend`:
 
 <!-- BEGIN generated:tensorrt -->
 <!-- Generated by scripts/make_results_table.py.  Do not edit. -->
 
-Measured on a desktop RTX 4060, not a Jetson.  Driver `591.86`, CUDA `12.9.1.010`, TensorRT `10.11.0.33`, image `nvcr.io/nvidia/tensorrt:25.06-py3` under WSL2 Docker.  GPU contention: no other compute process and at most 0 percent utilisation before and after the run; host nvidia-smi, sampled every 5 s through the run, listed no other compute process.  CPU not busy: load average 2.42 before and 3.18 after, on 16 logical cores shared with other containers.  Accuracy on the test split, 1440 images; latency over 300 iterations after 30 warmup.
+Measured on a desktop RTX 4060, not a Jetson.  Driver `591.86`, CUDA `12.9.1.010`, TensorRT `10.11.0.33`, image `nvcr.io/nvidia/tensorrt:25.06-py3` under WSL2 Docker.  GPU contention: no other compute process and at most 5 percent utilisation before and after the run; host nvidia-smi, sampled every 5 s through the run, listed no other compute process.  CPU not busy: load average 0.29 before and 1.34 after, on 16 logical cores shared with other containers.  Accuracy on the test split, 1440 images; latency over 300 iterations after 30 warmup.
 
 | variant | precision | mAP@0.5 | mAP@0.5:0.95 | vs ONNX Runtime FP32 | engine | inference p50 | inference p95 | end to end p50 | end-to-end FPS |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `tensorrt-fp32` | fp32 | 0.9727 | 0.8648 | -0.00017 | 17194 KiB | 2.08 ms | 2.93 ms | 5.49 ms | 178.5 |
-| `tensorrt-fp16` | fp16 | 0.9727 | 0.8649 | -0.00007 | 9913 KiB | 1.52 ms | 2.35 ms | 5.56 ms | 177.4 |
-| `tensorrt-int8` | int8 | 0.9546 | 0.8009 | -0.06408 | 8116 KiB | 1.65 ms | 2.51 ms | 5.24 ms | 188.6 |
+| `tensorrt-fp32` | fp32 | 0.9775 | 0.8605 | -0.00004 | 30841 KiB | 2.40 ms | 3.16 ms | 5.25 ms | 170.2 |
+| `tensorrt-fp16` | fp16 | 0.9776 | 0.8603 | -0.00018 | 13832 KiB | 1.66 ms | 2.47 ms | 4.56 ms | 196.8 |
+| `tensorrt-int8` | int8 | 0.9760 | 0.8197 | -0.04082 | 9738 KiB | 1.72 ms | 2.39 ms | 5.22 ms | 184.4 |
 <!-- END generated:tensorrt -->
 
-The FP32 engine is 2.08 ms at p50 against 8.93 ms for eager PyTorch FP32 on
+The FP32 engine is 2.40 ms at p50 against 10.65 ms for eager PyTorch FP32 on
 the same GPU, which is the launch overhead going away.  Once it has, FP16 does
-what it is for: 1.52 ms, faster than FP32, where on both eager backends it was
+what it is for: 1.66 ms, faster than FP32, where on both eager backends it was
 slower.  The accuracy of the FP32 and FP16 engines matches the ONNX graph to
-within 0.00017 mAP@0.5:0.95.
+within 0.00018 mAP@0.5:0.95.
 
-INT8 does not pay here.  TensorRT's entropy calibrator, given the same 256
-training frames the ONNX Runtime path uses, produces an engine that costs
-0.06408 mAP@0.5:0.95 and runs at 1.65 ms, slower than FP16.  Implicit
-quantisation leaves TensorRT free to quantise the detection head, which is the
-same mistake the ONNX Runtime ablation measured at 0.04564 when the head was
-quantised on purpose.  Holding the head's output convolutions at FP16 with
-per-layer precision constraints is the experiment that would test that
-explanation; it has not been run.
+INT8 still does not pay on this GPU.  TensorRT's entropy calibrator, given the
+same 256 training frames the ONNX Runtime path uses, produces an engine that
+costs 0.04082 mAP@0.5:0.95 and runs at 1.72 ms, slower than FP16.  That is a
+smaller loss than YOLOv8n's INT8 engine took, 0.06408 and the INT8 engine
+scores 0.81967 against YOLOv8n's 0.80087, so on TensorRT INT8 the new detector
+is the better one.  Implicit quantisation still leaves TensorRT free to
+quantise the detection head; holding the head's output convolutions at FP16
+with per-layer precision constraints is the experiment that would test how much
+of the remaining loss that is and it has not been run.
+
+Against YOLOv8n's engines on the same GPU, YOLOX-Tiny is slower at FP32, 2.40
+ms against 2.08 ms and level at FP16, 1.66 ms against 1.52 ms, which is what a
+larger network that fuses well should do.
 
 Whether INT8 buys FPS on an Orin Nano, where the balance between arithmetic and
 memory bandwidth is different, is still unmeasured and `docs/jetson.md` has
@@ -189,18 +205,19 @@ the commands.
 
 Test split, twelve sequences, 8144 ground-truth boxes, 87 identities, IoU
 threshold 0.5, ground truth filtered at visibility 0.35.  Both trackers see
-identical detections from the same FP32 model.
+identical detections from the same FP32 model, with parameters re-tuned on val
+for this detector.
 
 <!-- BEGIN generated:tracking -->
 <!-- Generated by scripts/make_results_table.py.  Do not edit. -->
 
 | tracker | MOTA | MOTP (IoU) | IDF1 | IDP | IDR | ID switches | fragmentations | MT | ML | ms/frame p50 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| bytetrack | 0.9126 | 0.9361 | 0.9119 | 0.9279 | 0.8965 | 24 | 45 | 82/87 | 1/87 | 19.58 |
-| deepsort | 0.9024 | 0.9373 | 0.8946 | 0.9186 | 0.8718 | 32 | 67 | 79/87 | 1/87 | 25.85 |
+| bytetrack | 0.8999 | 0.9303 | 0.9080 | 0.9135 | 0.9025 | 23 | 55 | 84/87 | 1/87 | 22.59 |
+| deepsort | 0.8954 | 0.9309 | 0.8954 | 0.9073 | 0.8838 | 33 | 99 | 82/87 | 1/87 | 31.98 |
 <!-- END generated:tracking -->
 
-ByteTrack wins on every headline number and costs 6.3 ms less per frame.
+ByteTrack wins on every headline number and costs about nine milliseconds less per frame.
 `docs/tracking.md` takes that apart, including the run where DeepSORT is given
 a colour histogram instead of the trained embedding and beats itself.
 
@@ -213,31 +230,33 @@ a colour histogram instead of the trained embedding and beats itself.
 
 | cause | bytetrack | deepsort |
 | --- | ---: | ---: |
-| detector_gap | 9 | 9 |
-| occlusion | 15 | 20 |
+| detector_gap | 8 | 7 |
+| occlusion | 15 | 25 |
 | crossing | 0 | 0 |
 | fast_motion | 0 | 0 |
-| unattributed | 0 | 3 |
-| **total** | **24** | **32** |
+| unattributed | 0 | 1 |
+| **total** | **23** | **33** |
 
-Switches per hundred ground-truth detections: bytetrack 0.2947, deepsort 0.3929.
+Switches per hundred ground-truth detections: bytetrack 0.2824, deepsort 0.4052.
 <!-- END generated:idswitch_table -->
 
-Both trackers lose nine identities to the detector simply dropping the object
-whilst it was plainly visible, and that number is identical for both because
-they are fed identical detections.  Everything above nine is association.
+Both trackers lose a handful of identities to the detector simply dropping the
+object whilst it was plainly visible, eight for ByteTrack and seven for
+DeepSORT.  The counts differ by one even though the trackers see identical
+detections, because a gap only causes a switch when a tracker fails to bridge
+it.  Everything else is association.
 
 The `crossing` bucket is empty and that is a property of the precedence order
 rather than of the data: two objects crossing in this scene almost always
-occlude each other, occlusion is tested before crossing, and so a crossing
+occlude each other, occlusion is tested before crossing and so a crossing
 switch is recorded as an occlusion.  The order is documented at the top of
 `src/edgetrack/metrics/idswitch.py` and it is the right way round, because a
 hidden object is a case no association strategy can fix whereas an ambiguous
 visible one is.
 
-DeepSORT's three unattributed switches are the interesting residual: switches
-on objects that were visible, isolated, slow and detected.  Those are the
-appearance branch getting it wrong on its own terms.
+DeepSORT's one unattributed switch is the interesting residual: a switch on an
+object that was visible, isolated, slow and detected.  That is the appearance
+branch getting it wrong on its own terms.
 
 ---
 
@@ -248,27 +267,27 @@ appearance branch getting it wrong on its own terms.
 | | |
 | --- | --- |
 | Frames | 120 |
-| Throughput | 21.89 FPS |
-| Detections | 709 |
+| Throughput | 21.52 FPS |
+| Detections | 704 |
 | Distinct identities | 8 |
-| MOTA | 0.97067 |
-| IDF1 0.93644 | 1 ID switch, attributed to occlusion |
+| MOTA | 0.96508 |
+| IDF1 0.93324 | 1 ID switch, attributed to occlusion |
 
 Per-frame breakdown, p50 in milliseconds:
 
 | Stage | ms |
 | --- | ---: |
-| preprocess | 2.917 |
-| inference | 16.214 |
-| postprocess | 0.598 |
+| preprocess | 2.312 |
+| inference | 20.228 |
+| postprocess | 0.553 |
 | appearance | 0.001 |
-| tracking | 0.653 |
-| total | 20.589 |
+| tracking | 0.601 |
+| total | 24.548 |
 
-The detector is 79 percent of the frame and the tracker is 3 percent.  The
+The detector is 82 percent of the frame and the tracker is 2 percent.  The
 appearance figure is 0.001 because this run used ByteTrack, which does not
 compute descriptors; with DeepSORT and the trained embedding the per-frame cost
-rises from 19.58 ms to 25.85 ms, which is a third more for a worse result on
+rises from 22.59 ms to 31.98 ms, which is two fifths more for a worse result on
 this data.
 
 ---
@@ -277,12 +296,13 @@ this data.
 
 ```bash
 make data          # about a minute, deterministic from seeds
-make train         # about thirteen minutes on an RTX 4060
+make train         # about thirty minutes on an RTX 4060
 make reid          # about ten seconds
 make export        # FP32 and FP16 ONNX
 make quantise      # the three INT8 variants
 make experiments   # accuracy, tracking, latency
 make publish       # copy into results/published and refresh the tables
+make compare       # the YOLOv8n numbers beside the new ones
 ```
 
 `make check` then verifies that every number on this page still traces to a
