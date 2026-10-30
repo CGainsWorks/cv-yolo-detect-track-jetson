@@ -1,16 +1,31 @@
 # Training and export only.  Never installed in the runtime image.
 #
-# ultralytics is AGPL-3.0.  It is used to fine-tune YOLOv8 from Ultralytics'
-# AGPL-3.0 yolov8n.pt and to export the ONNX graphs, so the resulting weights
-# carry an AGPL-3.0 obligation even though the runtime never imports the
-# library.  docs/licences.md states what that means for deployment.
+# The detector is YOLOX-Tiny from Megvii's yolox package, Apache-2.0, fine-tuned
+# from Megvii's Apache-2.0 COCO checkpoint (configs/train.yaml), so the weights
+# carry no copyleft obligation.  docs/licences.md has the detail.
+#
+# yolox itself is installed separately, because its setup.py imports torch to
+# decide whether to compile an optional C++ COCO evaluator and so needs torch
+# present and build isolation off:
+#
+#     pip install -r requirements-train.txt
+#     pip install --no-deps --no-build-isolation -r requirements-yolox.txt
 
 --extra-index-url https://download.pytorch.org/whl/cu126
 
 torch>=2.4
 torchvision>=0.19
-ultralytics>=8.3,<9
 onnx>=1.16
-onnxslim>=0.1                    # ultralytics uses this for --simplify
+onnxslim>=0.1                    # graph simplification after export
 onnxconverter-common>=1.14
-matplotlib>=3.8                  # ultralytics writes training plots
+
+# yolox's own runtime dependencies, listed here because it is installed with
+# --no-deps.  Its requirements file pins onnx-simplifier 0.4.10, which has no
+# wheel for Python 3.12 and is not needed: onnxslim does the simplification.
+loguru>=0.7
+tabulate>=0.9
+thop>=0.1
+psutil>=5.9
+ninja>=1.11
+pycocotools>=2.0.7
+tensorboard>=2.15

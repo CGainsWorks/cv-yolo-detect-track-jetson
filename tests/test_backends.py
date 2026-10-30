@@ -21,10 +21,10 @@ from edgetrack.track.matching import iou_matrix
 
 ROOT = Path(__file__).resolve().parent.parent
 MODELS = ROOT / "models"
-FP32 = MODELS / "yolov8n_edgetrack_fp32.onnx"
-FP16 = MODELS / "yolov8n_edgetrack_fp16.onnx"
-INT8 = MODELS / "yolov8n_edgetrack_int8.onnx"
-CHECKPOINT = MODELS / "yolov8n_edgetrack.pt"
+FP32 = MODELS / "yolox_tiny_edgetrack_fp32.onnx"
+FP16 = MODELS / "yolox_tiny_edgetrack_fp16.onnx"
+INT8 = MODELS / "yolox_tiny_edgetrack_int8.onnx"
+CHECKPOINT = MODELS / "yolox_tiny_edgetrack.pt"
 
 pytestmark = pytest.mark.needs_model
 
@@ -160,7 +160,7 @@ def test_torch_and_onnx_agree(frames):
     require(FP32)
     require(CHECKPOINT)
     torch = pytest.importorskip("torch")
-    pytest.importorskip("ultralytics")
+    pytest.importorskip("yolox")
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     onnx_detections, _ = detections_for(FP32, frames)
@@ -181,43 +181,87 @@ def test_torch_and_onnx_agree(frames):
 
 
 @pytest.mark.slow
-def test_map_matches_the_ultralytics_validator():
-    """This repository's mAP against the one Ultralytics computes.
+def test_map_matches_pycocotools():
+    """This repository's mAP against pycocotools on the same predictions.
 
-    They will not agree exactly.  Ultralytics integrates the precision-recall
-    curve with a trapezoid over 101 interpolation points; the implementation
-    here takes COCO's mean of the same 101 samples, and the matching rules
-    differ in how ties are broken.  The tolerance below is what that
-    disagreement is worth on this data, and it is checked rather than assumed
-    so that a real regression in the metric cannot hide inside it.
+    Both take COCO's mean of 101 interpolated precision samples, so on
+    identical predictions and ground truth they should agree to within how the
+    two break a tie between predictions of equal score.  The predictions are
+    the FP32 graph's on the val split at the mAP threshold; the ground truth is
+    the YOLO label files.  A real regression in the metric moves the numbers
+    by far more than the tolerance.
     """
-    pytest.importorskip("ultralytics")
-    require(CHECKPOINT)
-    data_yaml = ROOT / "data" / "processed" / "data.yaml"
-    if not data_yaml.exists():
+    pytest.importorskip("pycocotools")
+    require(FP32)
+    data_root = ROOT / "data" / "processed"
+    images = sorted((data_root / "images" / "val").glob("*.jpg"))
+    if not images:
         pytest.skip("dataset not generated; run `make data`")
 
-    import json
+    import sys
 
-    from ultralytics import YOLO
+    from pycocotools.coco import COCO
+    from pycocotools.cocoeval import COCOeval
 
-    published = ROOT / "results" / "published" / "detection.json"
-    if not published.exists():
-        pytest.skip("no published detection results to compare against")
-    mine = json.loads(published.read_text(encoding="utf-8"))
-    fp32 = next(
-        entry["metrics"] for entry in mine["variants"].values()
-        if entry["detector"]["precision"] == "fp32"
-    )
+    from edgetrack.metrics.detection import evaluate_detections
 
-    metrics = YOLO(str(CHECKPOINT)).val(
-        data=str(data_yaml.resolve()), split=mine["split"], imgsz=640, verbose=False
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from evaluate import collect_samples
+
+    detector = build_detector(
+        FP32,
+        "onnx",
+        DetectorConfig(
+            imgsz=(640, 384), conf_threshold=0.001, iou_threshold=0.6,
+            class_names=CLASSES, max_detections=300,
+        ),
+        providers=["CPUExecutionProvider"],
     )
-    assert float(metrics.box.map) == pytest.approx(fp32["map50_95"], abs=0.05), (
-        f"ultralytics {float(metrics.box.map):.4f} against this repository "
-        f"{fp32['map50_95']:.4f}"
+    samples, _ = collect_samples(detector, images, data_root / "labels" / "val", False)
+    detector.close()
+    mine = evaluate_detections(samples, list(range(len(CLASSES))))
+
+    def xywh(box) -> list[float]:
+        return [float(box[0]), float(box[1]), float(box[2] - box[0]), float(box[3] - box[1])]
+
+    truth: dict = {
+        "images": [],
+        "annotations": [],
+        "categories": [{"id": i, "name": name} for i, name in enumerate(CLASSES)],
+    }
+    predictions = []
+    for image_id, sample in enumerate(samples, start=1):
+        truth["images"].append({"id": image_id, "width": 640, "height": 384})
+        for box, cls in zip(sample.gt_boxes, sample.gt_classes):
+            bbox = xywh(box)
+            truth["annotations"].append({
+                "id": len(truth["annotations"]) + 1, "image_id": image_id,
+                "category_id": int(cls), "bbox": bbox, "area": bbox[2] * bbox[3],
+                "iscrowd": 0,
+            })
+        for box, score, cls in zip(sample.pred_boxes, sample.pred_scores, sample.pred_classes):
+            predictions.append({
+                "image_id": image_id, "category_id": int(cls), "bbox": xywh(box),
+                "score": float(score),
+            })
+    ground = COCO()
+    ground.dataset = truth
+    ground.createIndex()
+    evaluation = COCOeval(ground, ground.loadRes(predictions), "bbox")
+    evaluation.params.maxDets = [1, 10, 300]
+    evaluation.evaluate()
+    evaluation.accumulate()
+    # Read AP from the accumulated array rather than from summarize(), whose
+    # first statistic is hard-wired to 100 detections per image and comes back
+    # as -1 when 100 is not in maxDets.  Axes: IoU, recall, class, area, maxDets.
+    precision = evaluation.eval["precision"][:, :, :, 0, -1]
+    coco_map50_95 = float(np.mean(precision[precision > -1]))
+    at_50 = precision[0]
+    coco_map50 = float(np.mean(at_50[at_50 > -1]))
+    assert coco_map50_95 == pytest.approx(mine.map50_95, abs=0.01), (
+        f"pycocotools {coco_map50_95:.4f} against this repository {mine.map50_95:.4f}"
     )
-    assert float(metrics.box.map50) == pytest.approx(fp32["map50"], abs=0.05)
+    assert coco_map50 == pytest.approx(mine.map50, abs=0.01)
 
 
 def test_precision_detection_needs_no_onnx_package():
@@ -225,7 +269,7 @@ def test_precision_detection_needs_no_onnx_package():
     ``onnx`` is in requirements-train.txt and deliberately absent from the
     runtime.  An earlier version read the graph through it and silently
     reported INT8 models as FP32 wherever it was missing, which is exactly
-    the deployed configuration, and CI caught it only once the weights
+    the deployed configuration and CI caught it only once the weights
     started downloading.  This runs the check in an interpreter where
     importing onnx raises, which is what ``sys.modules[name] = None`` does.
     """

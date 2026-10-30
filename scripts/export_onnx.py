@@ -8,16 +8,22 @@ Produces ``models/<name>_fp32.onnx`` and ``models/<name>_fp16.onnx``.  INT8
 comes from ``scripts/quantize_onnx.py``, which derives it from the FP32 graph.
 
 Why FP16 is exported rather than converted.  The obvious route is
-``onnxconverter_common.float16.convert_float_to_float16`` on the FP32 file, and
-it is what this script did first.  On this graph it emits an invalid model: the
-converter casts the tensors around ``/model.10/Resize`` but leaves the declared
-type of that node's output at float, and ONNX Runtime refuses to load the
-result with a type error.  Blocking ``Resize`` from conversion and keeping the
-IO types in float both fail the same way.  Exporting from a half-precision
-torch module instead produces a graph that loads and runs, so that is what
-happens here, and the cost is that FP16 is a sibling export rather than a
-derivative of the FP32 file.  INT8 is still derived, so the INT8 comparison
-retains the shared-topology guarantee that FP16 loses.
+``onnxconverter_common.float16.convert_float_to_float16`` on the FP32 file.  On
+the previous detector's graph it emitted a model ONNX Runtime refused to load,
+a type error around a Resize node, so FP16 has been a separate export from a
+half-precision module ever since and that is still what happens here.  The
+cost is that FP16 is a sibling export rather than a derivative of the FP32
+file.  INT8 is still derived, so the INT8 comparison retains the
+shared-topology guarantee that FP16 loses.
+
+What is exported.  ``edgetrack.detect.yolox_net.DeployYOLOX``: YOLOX-Tiny with
+the RGB 0..1 input folded into the stem convolution and the grid decode and
+``obj * cls`` scoring done in the graph, so the output is ``(1, 4 +
+num_classes, 5040)`` at 640x384, the layout
+``edgetrack.detect.base.decode_head`` reads.  The TorchScript exporter is used
+(``dynamo=False``) because it names nodes after the module path,
+``/model/head/cls_preds.0/Conv`` and ``scripts/quantize_onnx.py`` finds the
+detection head by those names.  The graph is then simplified with onnxslim.
 
 Opset 13, not 12.  Per-channel quantisation needs the ``axis`` attribute on
 ``QuantizeLinear`` and ``DequantizeLinear``, which arrived in opset 13; at
@@ -36,7 +42,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shutil
 import sys
 from pathlib import Path
 
@@ -84,46 +89,60 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--weights", default="models/yolov8n_edgetrack.pt", type=Path)
+    parser.add_argument("--weights", default="models/yolox_tiny_edgetrack.pt", type=Path)
     parser.add_argument("--config", default="configs/export.yaml", type=Path)
     parser.add_argument("--precision", default="fp32", choices=["fp32", "fp16"])
     parser.add_argument("--device", default=0)
     parser.add_argument("--out", default=None, type=Path)
     args = parser.parse_args(argv)
 
+    import onnxslim
     import torch
-    from ultralytics import YOLO
+
+    from edgetrack.detect.yolox_net import deploy_module
 
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))["onnx"]
     weights = Path(args.weights)
     if not weights.exists():
         raise FileNotFoundError(f"no checkpoint at {weights}; run `make train` first")
-    if args.precision == "fp16" and not torch.cuda.is_available():
+    half = args.precision == "fp16"
+    if half and not torch.cuda.is_available():
         raise RuntimeError(
-            "half precision export needs a CUDA device: Ultralytics converts the "
-            "module with .half() and the tracing pass runs on the GPU"
+            "half precision export needs a CUDA device: the module is converted "
+            "with .half() and traced on the GPU, because several CPU kernels have "
+            "no half implementation"
         )
 
     width, height = config["imgsz"]
-    model = YOLO(str(weights))
-    exported = model.export(
-        format="onnx",
-        opset=int(config["opset"]),
-        simplify=bool(config.get("simplify", True)),
-        dynamic=bool(config.get("dynamic", False)),
-        half=(args.precision == "fp16"),
-        device=args.device if args.precision == "fp16" else "cpu",
-        imgsz=[int(height), int(width)],  # Ultralytics takes height, width
-    )
+    module, meta = deploy_module(weights, (int(width), int(height)))
+    device = torch.device(f"cuda:{args.device}" if half else "cpu")
+    module = module.to(device)
+    dummy = torch.zeros((1, 3, int(height), int(width)), device=device)
+    if half:
+        module, dummy = module.half(), dummy.half()
 
     destination = (
         Path(args.out) if args.out
         else weights.with_name(f"{weights.stem}_{args.precision}.onnx")
     )
     destination.parent.mkdir(parents=True, exist_ok=True)
-    exported_path = Path(exported)
-    if exported_path.resolve() != destination.resolve():
-        shutil.move(str(exported_path), destination)
+    with torch.no_grad():
+        torch.onnx.export(
+            module,
+            (dummy,),
+            str(destination),
+            dynamo=False,
+            opset_version=int(config["opset"]),
+            input_names=["images"],
+            output_names=["output0"],
+            do_constant_folding=True,
+            dynamic_axes=None,
+        )
+    if bool(config.get("simplify", True)):
+        import onnx
+
+        slim = onnxslim.slim(onnx.load(str(destination)))
+        onnx.save(slim, str(destination))
 
     checks = verify(destination, (int(width), int(height)))
     expected_dtype = "tensor(float16)" if args.precision == "fp16" else "tensor(float)"
@@ -141,6 +160,8 @@ def main(argv: list[str] | None = None) -> int:
         "opset": int(config["opset"]),
         "imgsz_wh": [int(width), int(height)],
         "precision": args.precision,
+        "architecture": meta["architecture"],
+        "class_names": meta["class_names"],
         **checks,
     }
     write_text_lf(destination.with_suffix(".json"), json.dumps(record, indent=2) + "\n")

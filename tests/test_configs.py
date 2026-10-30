@@ -1,7 +1,7 @@
 """The YAML files and the dataclass defaults say the same thing.
 
 Two places to change a threshold is one place too many.  These tests make the
-YAML authoritative for a reader and the dataclass authoritative for the code,
+YAML authoritative for a reader and the dataclass authoritative for the code
 and fail if they ever disagree.
 """
 
@@ -91,7 +91,7 @@ def test_export_opset_supports_per_channel_quantisation():
     """Per-channel QDQ needs the axis attribute, which arrived in opset 13.
 
     At opset 12 ``quantize_static(per_channel=True)`` emits a graph ONNX
-    Runtime rejects as invalid, and it does so without warning at export time.
+    Runtime rejects as invalid and it does so without warning at export time.
     """
     export = load("export.yaml")
     if export["quantisation"]["int8"]["per_channel"]:
@@ -111,17 +111,25 @@ def test_benchmark_variants_point_at_plausible_artefacts():
         )
 
 
-def test_train_yaml_keeps_colour_augmentation_low():
+def test_train_yaml_keeps_colour_augmentation_off():
     """Instance colour is DeepSORT's only cue on this dataset.
 
     An aggressive HSV augmentation teaches the detector to ignore the signal
-    the appearance branch depends on, so the schedule deliberately turns it
-    down.  If somebody raises it, this test is where they find out why not.
+    the appearance branch depends on.  YOLOX's HSV augmentation has fixed
+    gains that cannot be turned down from the config, so the schedule turns it
+    off.  If somebody turns it on, this test is where they find out why not.
     """
-    train = load("train.yaml")["train"]
-    assert train["hsv_s"] <= 0.4
-    assert train["hsv_v"] <= 0.4
-    assert train["hsv_h"] <= 0.02
+    exp = load("train.yaml")["exp"]
+    assert exp["hsv_prob"] == 0.0
+    assert exp["mixup_prob"] == 0.0 and not exp["enable_mixup"]
+
+
+def test_train_yaml_names_a_permissive_starting_point():
+    """The starting weights decide the licence of everything fine-tuned from them."""
+    train = load("train.yaml")
+    assert train["pretrained"]["licence"] == "Apache-2.0"
+    assert len(train["pretrained"]["sha256"]) == 64
+    assert "ultralytics" not in train["pretrained"]["url"].lower()
 
 
 @pytest.mark.parametrize("name", [

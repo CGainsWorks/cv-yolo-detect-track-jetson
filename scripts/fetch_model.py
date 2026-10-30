@@ -2,12 +2,12 @@
 """Download the published weights from the GitHub Release named in the manifest.
 
     python scripts/fetch_model.py            # everything in the manifest
-    python scripts/fetch_model.py --only yolov8n_edgetrack_fp32.onnx
+    python scripts/fetch_model.py --only yolox_tiny_edgetrack_fp32.onnx
 
 Weights live in a Release rather than in Git.  A 12 MB checkpoint committed
-once is 12 MB in the pack file forever, and the ONNX and engine artefacts would
+once is 12 MB in the pack file forever and the ONNX and engine artefacts would
 be re-added on every retrain.  ``models/MANIFEST.json`` records the URL, size
-and SHA-256 of each artefact, and this script refuses anything whose digest
+and SHA-256 of each artefact and this script refuses anything whose digest
 does not match, so a truncated download fails here rather than as a strange
 accuracy number three steps later.
 
@@ -15,8 +15,8 @@ The manifest points at the API asset endpoint rather than the browser download
 URL, because that is the one that works on a private repository with a token in
 ``GITHUB_TOKEN``.  On a public repository neither needs authentication.
 
-If the release is unreachable, ``--fallback pretrained`` exports COCO YOLOv8n
-instead.  That model detects none of this dataset's classes and is only useful
+If the release is unreachable, ``--fallback pretrained`` exports Megvii's COCO
+YOLOX-Tiny instead.  That model detects none of this dataset's classes and is only useful
 for exercising the plumbing, so it is opt-in and every artefact it produces is
 named ``_coco`` to keep it out of a results run by accident.
 """
@@ -47,7 +47,7 @@ def _headers() -> dict[str, str]:
     """Authorisation, if the environment offers any.
 
     Release assets on a public repository need none.  While the repository is
-    private they do, and a CI job already has ``GITHUB_TOKEN`` in scope, so
+    private they do and a CI job already has ``GITHUB_TOKEN`` in scope, so
     honouring it costs three lines and means the fetch works either side of the
     day the repository is made public.
     """
@@ -86,16 +86,27 @@ def download(url: str, destination: Path, expected_sha: str, expected_bytes: int
 
 
 def export_pretrained(out_dir: Path, imgsz: tuple[int, int]) -> Path:
-    """Export stock COCO YOLOv8n so the plumbing can be exercised offline."""
-    from ultralytics import YOLO
+    """Export Megvii's COCO YOLOX-Tiny so the plumbing can be exercised offline.
+
+    Needs the training requirements, because the export traces the torch
+    module.  The checkpoint comes from the URL and digest in
+    ``configs/train.yaml``, the same file fine-tuning starts from.
+    """
+    import torch
+
+    from export_onnx import main as export_onnx
+    from train import fetch_pretrained, load_config
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    model = YOLO("yolov8n.pt")
-    exported = Path(
-        model.export(format="onnx", opset=12, simplify=True, imgsz=[imgsz[1], imgsz[0]])
+    spec = load_config(Path("configs/train.yaml"))["pretrained"]
+    state = torch.load(str(fetch_pretrained(spec, out_dir)), map_location="cpu", weights_only=True)
+    probe = out_dir / "yolox_tiny_coco.pt"
+    torch.save(
+        {"model": state["model"], "architecture": "yolox_tiny", "num_classes": 80},
+        probe,
     )
-    destination = out_dir / "yolov8n_coco_fp32.onnx"
-    exported.replace(destination)
+    destination = out_dir / "yolox_tiny_coco_fp32.onnx"
+    export_onnx(["--weights", str(probe), "--precision", "fp32", "--out", str(destination)])
     return destination
 
 

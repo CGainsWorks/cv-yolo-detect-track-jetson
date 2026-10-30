@@ -27,22 +27,22 @@ Three variants, because the difference between them is the interesting result
 
 ``int8_allops``
     Everything ONNX Runtime is willing to quantise, which is the default when
-    ``op_types_to_quantize`` is left unset.  It produces a model that loads,
-    runs, and detects nothing at all.
+    ``op_types_to_quantize`` is left unset.  On the previous detector it
+    produced a model that loaded, ran and detected nothing at all.
 
-The third is kept rather than deleted because it was the first attempt, and a
+The third is kept rather than deleted because it was the first attempt and a
 repository that ships only the version that worked teaches nobody anything.
 All three are scored by ``scripts/evaluate.py`` and the numbers are in
 ``docs/results.md``.
 
-Why the default fails.  YOLOv8's head ends in elementwise arithmetic: a Sigmoid
-over the class logits, then a distribution-focal-loss softmax, a convolution
-over the bins and a chain of Slice, Sub, Add, Div and Mul that turns the
-distribution into box coordinates.  Quantising that chain to uint8 puts a
-coarse step on tensors whose useful range spans several orders of magnitude and
-the class scores come out identically zero.  The boxes survive, which is what
-makes the failure hard to spot from tensor statistics alone: the geometry looks
-right and every confidence is zero.
+Why the default is dangerous.  The detection head ends in elementwise
+arithmetic.  In the YOLOX export it is a Sigmoid over the objectness and class
+logits, an Exp on the box size, an Add and Mul against the anchor grid and a
+Mul of objectness into the class scores.  Quantising that chain to uint8 puts
+a coarse step on tensors whose useful range spans several orders of magnitude:
+box centres run to 640 pixels while the scores that decide a detection live
+between 0 and 1.  On YOLOv8's head, whose tail is a distribution-focal-loss
+softmax, it zeroed every class score while the boxes survived.
 
 What this is not.  TensorRT's INT8 calibration is a different implementation
 with a different calibrator and different layer fusion, so the INT8 mAP
@@ -111,25 +111,27 @@ class ImageCalibrationReader:
 def head_output_nodes(model_path: Path) -> list[str]:
     """The detection head's final convolutions, by name.
 
-    Found by structure rather than hard-coded: on each of the three strides the
-    box branch ``cv2.S`` and the class branch ``cv3.S`` end in a convolution,
-    and the distribution-focal-loss convolution sits after them.  A hard-coded
-    list would silently stop matching the day the architecture changes, and
-    silently quantising the head is the failure this function exists to
-    prevent.
+    Found by structure rather than hard-coded: on each of the three strides
+    YOLOX's decoupled head ends in three 1x1 convolutions, ``cls_preds.S``,
+    ``reg_preds.S`` and ``obj_preds.S`` and the TorchScript exporter names
+    them after that module path.  A hard-coded list would silently stop
+    matching the day the architecture changes and silently quantising the
+    head is the failure this function exists to prevent, so anything other
+    than three per stride is an error.
     """
     graph = onnx.load(str(model_path)).graph
     names = [node.name for node in graph.node if node.op_type == "Conv"]
-    groups: dict[tuple[str, str], list[str]] = {}
-    for name in names:
-        parts = [p for p in name.split("/") if p.startswith(("cv2.", "cv3."))]
-        if not parts:
-            continue
-        branch = parts[0]
-        groups.setdefault((branch[:3], branch.split(".")[1]), []).append(name)
-    outputs = [sorted(group)[-1] for group in groups.values()]
-    outputs.extend(name for name in names if "/dfl/" in name)
-    return sorted(set(outputs))
+    branches = ("cls_preds.", "reg_preds.", "obj_preds.")
+    outputs = [
+        name for name in names
+        if "/head/" in name and any(part.startswith(branches) for part in name.split("/"))
+    ]
+    strides = {
+        part.split(".")[1] for name in outputs for part in name.split("/") if "_preds." in part
+    }
+    if outputs and len(outputs) != 3 * len(strides):
+        raise RuntimeError(f"expected three head output convolutions per stride, got {outputs}")
+    return sorted(outputs)
 
 
 def to_int8(
@@ -182,7 +184,7 @@ def verify(path: Path, imgsz: tuple[int, int]) -> dict:
     """Load it and run it.
 
     A quantised graph ONNX Runtime rejects is the expected failure when the
-    opset is too low for per-channel QDQ, and it does not surface until
+    opset is too low for per-channel QDQ and it does not surface until
     something tries to use the file.
     """
     session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
@@ -201,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--model", default="models/yolov8n_edgetrack_fp32.onnx", type=Path)
+    parser.add_argument("--model", default="models/yolox_tiny_edgetrack_fp32.onnx", type=Path)
     parser.add_argument("--config", default="configs/export.yaml", type=Path)
     parser.add_argument("--data-root", default="data/processed", type=Path)
     parser.add_argument("--variants", nargs="*", default=None,

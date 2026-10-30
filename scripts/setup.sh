@@ -34,6 +34,7 @@ fi
 
 if [ "$WITH_TRAIN" = "1" ]; then
     "$VPY" -m pip install -r requirements-train.txt
+    "$VPY" -m pip install --no-deps --no-build-isolation -r requirements-yolox.txt
 fi
 
 "$VPY" scripts/fetch_model.py || {

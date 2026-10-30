@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Detection accuracy for one or more model variants on the same images.
 
-    python scripts/evaluate.py --models models/yolov8n_edgetrack_fp32.onnx \\
-                                        models/yolov8n_edgetrack_int8.onnx \\
+    python scripts/evaluate.py --models models/yolox_tiny_edgetrack_fp32.onnx \\
+                                        models/yolox_tiny_edgetrack_int8.onnx \\
                                --split test --out results/detection.json
 
 Every variant is scored on the same frames with the same decoder, the same NMS

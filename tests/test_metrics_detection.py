@@ -3,8 +3,8 @@
 The mAP implementation is load-bearing for the headline table, so it is pinned
 against arithmetic that can be checked on paper rather than against another
 library's output.  ``tests/test_backends.py`` adds the comparison against
-Ultralytics' validator on the real model, which is the harder check but needs
-the weights.
+pycocotools on the real model's predictions, which is the harder check but
+needs the weights and the dataset.
 """
 
 from __future__ import annotations

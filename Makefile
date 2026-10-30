@@ -42,7 +42,7 @@ DATA ?= data/processed
 MODELS ?= models
 RESULTS ?= results
 PUBLISHED := $(RESULTS)/published
-NAME ?= yolov8n_edgetrack
+NAME ?= yolox_tiny_edgetrack
 FP32 := $(MODELS)/$(NAME)_fp32.onnx
 FP16 := $(MODELS)/$(NAME)_fp16.onnx
 INT8 := $(MODELS)/$(NAME)_int8.onnx
@@ -136,8 +136,8 @@ $(FP32):
 	@exit 1
 
 .PHONY: train
-train: $(DATA)/data.yaml  ## Fine-tune YOLOv8n (needs a CUDA GPU)
-	$(VENV_PY) scripts/train.py --config configs/train.yaml --data $(DATA)/data.yaml \
+train: $(DATA)/data.yaml  ## Fine-tune YOLOX-Tiny (needs a CUDA GPU)
+	$(VENV_PY) scripts/train.py --config configs/train.yaml --data-root $(DATA) \
 	  --out $(MODELS) --name $(NAME)
 
 .PHONY: reid
@@ -172,7 +172,7 @@ track:  ## MOTA, IDF1 and ID switches for both trackers
 	  --trackers bytetrack deepsort --appearance reid --reid-model $(REID) \
 	  --out $(RESULTS)/tracking.json
 	$(VENV_PY) scripts/eval_tracking.py --model $(FP32) --data-root $(DATA) \
-	  --trackers bytetrack deepsort --appearance histogram \
+	  --trackers deepsort --appearance histogram \
 	  --out $(RESULTS)/tracking_histogram.json
 	$(VENV_PY) scripts/eval_tracking.py --detections gt --data-root $(DATA) \
 	  --trackers bytetrack deepsort --appearance reid --reid-model $(REID) \
@@ -196,6 +196,10 @@ experiments: evaluate track bench probe  ## Regenerate every published number
 	@echo
 	@echo "Results are in $(RESULTS)/.  To publish them:"
 	@echo "  cp $(RESULTS)/*.json $(PUBLISHED)/ && make docs-fix"
+
+.PHONY: compare
+compare:  ## Put the published numbers beside the YOLOv8n ones they replaced
+	$(VENV_PY) scripts/compare_detectors.py
 
 .PHONY: publish
 publish:  ## Copy this run's results into results/published and refresh the tables
@@ -249,7 +253,7 @@ docker-runtime:  ## Build the runtime image and run the demo inside it
 	docker build -f docker/Dockerfile.runtime -t edgetrack:runtime .
 	docker run --rm -v "$(PWD)/results:/app/results" edgetrack:runtime \
 	  python scripts/run_demo.py --source synth:7 --frames 40 \
-	    --model models/yolov8n_edgetrack_fp32.onnx --out /app/results/docker_demo.json
+	    --model models/yolox_tiny_edgetrack_fp32.onnx --out /app/results/docker_demo.json
 
 .PHONY: docker-train
 docker-train:  ## Build the training image

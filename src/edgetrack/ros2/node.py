@@ -18,7 +18,7 @@ track identity as a string.
 Running it::
 
     ros2 run edgetrack_ros track_node --ros-args \\
-        -p source:=synth:7 -p model:=models/yolov8n_edgetrack_fp32.onnx
+        -p source:=synth:7 -p model:=models/yolox_tiny_edgetrack_fp32.onnx
 
 or, without a ROS package install, straight from the repository::
 
@@ -45,7 +45,7 @@ __all__ = ["EdgeTrackNode", "main"]
 _MISSING_ROS = (
     "rclpy is not importable.  This node needs a sourced ROS2 installation; "
     "on Ubuntu that is `source /opt/ros/humble/setup.bash`.  Everything else in "
-    "this repository runs without ROS, and docs/ros2.md has a container recipe."
+    "this repository runs without ROS and docs/ros2.md has a container recipe."
 )
 
 
@@ -85,7 +85,7 @@ def _build_node_class():
     """Define the node class only once rclpy is known to be importable.
 
     Subclassing ``rclpy.node.Node`` at module scope would make this module
-    unimportable without ROS, and ``tests/test_ros2_messages.py`` imports the
+    unimportable without ROS and ``tests/test_ros2_messages.py`` imports the
     payload builders from the same package.
     """
     import rclpy
@@ -107,7 +107,7 @@ def _build_node_class():
             super().__init__("edgetrack")
 
             self.declare_parameter("source", "synth:7")
-            self.declare_parameter("model", "models/yolov8n_edgetrack_fp32.onnx")
+            self.declare_parameter("model", "models/yolox_tiny_edgetrack_fp32.onnx")
             self.declare_parameter("backend", "onnx")
             self.declare_parameter("tracker", "bytetrack")
             self.declare_parameter("appearance", "histogram")

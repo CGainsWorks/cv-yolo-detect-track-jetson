@@ -1,12 +1,12 @@
 # Notebooks
 
-There are none, and that is deliberate.
+There are none and that is deliberate.
 
 Everything a notebook would do here is a script with `--help` and a JSON
 output: generating the dataset, training, exporting, quantising, scoring,
 tracking, benchmarking.  Those run in CI, are covered by tests and produce the
 numbers the documentation quotes.  A notebook doing the same work would be a
-second implementation that nothing checks, and the first thing to drift.
+second implementation that nothing checks and the first thing to drift.
 
 If you want to poke at the pieces interactively, the library is importable:
 
@@ -21,7 +21,7 @@ from edgetrack.track import build_tracker
 frames = list(generate_sequence(config_for_split("test", 7, n_frames=30)))
 
 pipeline = Pipeline(
-    build_detector("models/yolov8n_edgetrack_fp32.onnx", "onnx",
+    build_detector("models/yolox_tiny_edgetrack_fp32.onnx", "onnx",
                    DetectorConfig(imgsz=(640, 384))),
     build_tracker("bytetrack"),
 )

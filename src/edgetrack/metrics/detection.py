@@ -1,20 +1,18 @@
 """COCO-style detection metrics, implemented here rather than imported.
 
 The reason is the precision comparison.  ``scripts/evaluate.py`` scores the
-same weights exported at FP32, FP16 and INT8, and the whole point of the
+same weights exported at FP32, FP16 and INT8 and the whole point of the
 headline table is that the three numbers are produced by identical code on
-identical predictions.  Calling out to Ultralytics for one of them and to
-pycocotools for another would put a metric implementation difference inside the
-quantity being measured.
+identical predictions.  Calling out to the training framework's evaluator for
+one of them and to pycocotools for another would put a metric implementation
+difference inside the quantity being measured.
 
 Agreement with other implementations.  ``tests/test_metrics_detection.py``
-pins the arithmetic on cases small enough to check by hand, and
-``tests/test_backends.py`` compares the FP32 number against Ultralytics' own
-validator on the real model.  Those two will not agree exactly and are not
-expected to: Ultralytics integrates the precision-recall curve with a trapezoid
-over 101 interpolation points where COCO, and this module, take the mean of the
-same 101 samples, and the two differ again in how a tie between two predictions
-for one ground-truth box is broken.  The comparison uses a stated tolerance
+pins the arithmetic on cases small enough to check by hand and
+``tests/test_backends.py`` feeds the FP32 graph's predictions on the val split
+to both this module and pycocotools.  Both take COCO's mean of 101
+interpolated precision samples, so they differ only in how a tie between two
+predictions of equal score is broken.  The comparison uses a stated tolerance
 rather than assuming equality, so a real regression cannot hide inside the
 difference.
 """
@@ -147,7 +145,7 @@ def evaluate_detections(
             tp, n_gt = _match_one_class(samples, class_id, float(iou_threshold))
             per_class_ap[class_id].append(average_precision(tp, n_gt))
 
-    # A class with no ground truth anywhere has AP nan at every threshold, and
+    # A class with no ground truth anywhere has AP nan at every threshold and
     # np.nanmean over an all-nan slice warns before returning nan.  Deciding
     # which classes are present first avoids the warning and makes the
     # exclusion explicit rather than a side effect of nan propagation.

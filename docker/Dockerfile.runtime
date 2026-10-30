@@ -1,9 +1,11 @@
-# Runtime image: ONNX Runtime, OpenCV and numpy.  No torch, no ultralytics.
+# Runtime image: ONNX Runtime, OpenCV and numpy.  No torch, no yolox.
 #
-# The point of this image is the thing it does not contain.  Ultralytics is
-# AGPL-3.0 and torch is roughly two gigabytes of wheel, and once the model is an
-# ONNX file neither is needed.  The `docker` job in CI runs `import torch` and
-# `import ultralytics` inside the built image and fails if either succeeds.
+# The point of this image is the thing it does not contain.  Torch is roughly
+# two gigabytes of wheel and YOLOX's training package needs it and once the
+# model is an ONNX file neither is needed.  The `docker` job in CI runs
+# `import torch`, `import yolox` and `import ultralytics` inside the built image
+# and fails if any succeeds; ultralytics stays on that list because the
+# detector used to be AGPL-3.0 YOLOv8 and must not come back by accident.
 
 FROM python:3.12-slim AS runtime
 

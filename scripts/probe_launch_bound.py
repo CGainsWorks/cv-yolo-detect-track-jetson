@@ -4,12 +4,13 @@
     python scripts/probe_launch_bound.py
 
 The PyTorch CUDA row in the headline table is slower than it has any right to
-be: YOLOv8n is 4.9 GFLOPs and the GPU it runs on does over ten TFLOPs, so a
-frame ought to take well under a millisecond of arithmetic.  It does not.  This
+be: YOLOX-Tiny is about 9 GFLOPs at 640x384 by YOLOX's own count and the GPU
+it runs on does over ten TFLOPs, so a frame ought to take around a millisecond
+of arithmetic.  It does not.  This
 script establishes why, because "the GPU number looks wrong" is not a thing to
 leave in a results table unexplained.
 
-Two sweeps, and between them they answer it:
+Two sweeps and between them they answer it:
 
 *Batch scaling.*  Run the same input at batch 1, 2, 4 and 8.  If the network
 were compute bound the wall time would scale with the batch and the per-image
@@ -22,9 +23,9 @@ count is a property of the graph rather than of the tensor size.
 
 The conclusion this reaches on the published host is that eager PyTorch at
 batch 1 spends its time launching kernels, roughly a hundred layers' worth per
-frame, and almost none of it computing.  That matters for two reasons.  It
+frame and almost none of it computing.  That matters for two reasons.  It
 means the PyTorch GPU row is an upper bound on what the model costs rather than
-a measurement of it, and it is exactly the gap TensorRT exists to close: an
+a measurement of it and it is exactly the gap TensorRT exists to close: an
 engine fuses convolution, batch normalisation and activation into single
 kernels and can replay the whole graph as one CUDA graph, which removes most of
 the launches rather than making each one faster.
@@ -80,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--weights", default="models/yolov8n_edgetrack.pt", type=Path)
+    parser.add_argument("--weights", default="models/yolox_tiny_edgetrack.pt", type=Path)
     parser.add_argument("--batches", nargs="+", type=int, default=[1, 2, 4, 8])
     parser.add_argument("--imgsz", nargs=2, type=int, default=[640, 384], metavar=("W", "H"))
     parser.add_argument("--iterations", type=int, default=120)
@@ -89,7 +90,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     import torch
-    from ultralytics import YOLO
+
+    from edgetrack.detect.yolox_net import deploy_module
 
     if not torch.cuda.is_available():
         raise RuntimeError("this probe needs a CUDA device; there is nothing to measure on CPU")
@@ -102,9 +104,12 @@ def main(argv: list[str] | None = None) -> int:
     # rather than against PyTorch with an obvious flag left off.
     torch.backends.cudnn.benchmark = True
     device = torch.device("cuda")
-    model = YOLO(str(args.weights)).model.to(device).eval()
-
     width, height = args.imgsz
+    # The module the ONNX export traces, built at the base resolution; the
+    # backbone and head are fully convolutional, so the bare network is what
+    # runs at every size in the sweep and the decode is left out of it.
+    model = deploy_module(args.weights, (width, height))[0].model.to(device).eval()
+
     report: dict = {
         "device": torch.cuda.get_device_name(0),
         "torch": torch.__version__,

@@ -38,7 +38,7 @@ def build_configs(preset: str, seed: int) -> dict[str, list]:
         config_for_split("val", seed + 10_000 + i, n_frames=frames) for i in range(n_val)
     ]
     # Test sequences keep their long default length even on the small presets:
-    # tracking metrics on an eight frame sequence are meaningless, and the cost
+    # tracking metrics on an eight frame sequence are meaningless and the cost
     # of the extra frames is a few seconds.
     test_frames = 120 if preset == "full" else (60 if preset == "small" else 24)
     test = [
@@ -74,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.quiet:
             print(f"rendering {split}: {len(split_configs)} sequences", flush=True)
         # MOT ground truth for val as well as test.  Tracker parameters are
-        # chosen on val by scripts/tune_tracker.py, and choosing them on the
+        # chosen on val by scripts/tune_tracker.py and choosing them on the
         # split the headline numbers come from would make those numbers a
         # training score.
         stats[split] = write_split(
@@ -92,9 +92,11 @@ def main(argv: list[str] | None = None) -> int:
     summary["seconds"] = round(time.perf_counter() - started, 2)
     write_dataset_json(root, summary)
 
-    # The YOLO data yaml has to point at absolute paths or Ultralytics resolves
-    # them against its own settings directory, which is a different place on
-    # every machine and the single most common cause of "dataset not found".
+    # The YOLO data yaml points at absolute paths, because YOLO-format tooling
+    # (Ultralytics among it) resolves relative ones against its own settings
+    # directory, a different place on every machine.  Training here no longer
+    # reads it: scripts/train.py converts the label files to COCO JSON for
+    # YOLOX.  It is kept so the dataset still opens in standard YOLO tools.
     yaml_path = root / "data.yaml"
     yaml_path.write_text(
         "\n".join(

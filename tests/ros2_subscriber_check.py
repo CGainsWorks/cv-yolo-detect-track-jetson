@@ -38,7 +38,7 @@ from vision_msgs.msg import Detection2DArray  # noqa: E402
 from edgetrack.ros2.node import _build_node_class  # noqa: E402
 
 FRAMES = 30
-MODEL = ROOT / "models" / "yolov8n_edgetrack_fp32.onnx"
+MODEL = ROOT / "models" / "yolox_tiny_edgetrack_fp32.onnx"
 
 SENSOR_QOS = QoSProfile(
     reliability=QoSReliabilityPolicy.BEST_EFFORT,
@@ -124,7 +124,7 @@ def main() -> int:
         # exception from a callback already in flight inside the executor, it
         # arrives after the check has passed and the process still exits zero.
         # Two attempts at suppressing it changed nothing, so it is documented
-        # here rather than chased, and CI is right to keep passing on it.
+        # here rather than chased and CI is right to keep passing on it.
         node.timer.cancel()
         executor.remove_node(node)
         executor.remove_node(listener)

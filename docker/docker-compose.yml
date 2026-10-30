@@ -25,7 +25,7 @@ services:
     command: >
       python scripts/fetch_model.py
         --out /app/weights
-        --only yolov8n_edgetrack_fp32.onnx reid_edgetrack.onnx
+        --only yolox_tiny_edgetrack_fp32.onnx reid_edgetrack.onnx
 
   demo:
     build:
@@ -40,7 +40,7 @@ services:
     command: >
       python scripts/run_demo.py
         --source synth:7
-        --model /app/weights/yolov8n_edgetrack_fp32.onnx
+        --model /app/weights/yolox_tiny_edgetrack_fp32.onnx
         --tracker bytetrack
         --video /app/results/demo.mp4
         --out /app/results/demo.json

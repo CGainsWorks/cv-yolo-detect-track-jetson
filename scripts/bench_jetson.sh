@@ -40,7 +40,7 @@ fi
 for precision in fp32 fp16 int8; do
     echo "building the $precision engine"
     "$PYTHON" scripts/export_tensorrt.py \
-        --onnx models/yolov8n_edgetrack_fp32.onnx \
+        --onnx models/yolox_tiny_edgetrack_fp32.onnx \
         --precision "$precision" \
         --data-root "$DATA"
 done
@@ -49,7 +49,7 @@ for mode in $MODES; do
     echo "power mode $mode"
     sudo nvpmodel -m "$mode"
     sudo jetson_clocks
-    # Thermals need a moment to settle after a clock change, and the first
+    # Thermals need a moment to settle after a clock change and the first
     # seconds after jetson_clocks are not representative of anything.
     sleep 20
     "$PYTHON" scripts/benchmark_latency.py \

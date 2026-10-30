@@ -26,10 +26,9 @@ models/*
 *.plan
 *.cache
 
-# Ultralytics drops its pretrained checkpoints wherever it is run from.
-yolov8*.pt
-yolo11*.pt
-yolo26*.pt
+# Pretrained checkpoints and YOLOX's default output directory.
+*.pth
+YOLOX_outputs/
 
 # The dataset is generated, not stored.  scripts/make_dataset.py rebuilds it
 # byte for byte from the seeds in configs/data.yaml.

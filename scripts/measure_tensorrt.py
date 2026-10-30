@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--models", default="models", type=Path)
-    parser.add_argument("--name", default="yolov8n_edgetrack")
+    parser.add_argument("--name", default="yolox_tiny_edgetrack")
     parser.add_argument("--data-root", default="data/processed", type=Path)
     parser.add_argument("--split", default="test")
     parser.add_argument("--iterations", type=int, default=300)
@@ -135,6 +135,21 @@ def main(argv: list[str] | None = None) -> int:
     build_report = Path("results/tensorrt_build.json")
     detection_out = Path("results/tensorrt_detection.json")
     latency_out = Path("results/tensorrt_latency.json")
+
+    # The ONNX Runtime FP32 row every engine is compared against.  It must be
+    # the same graph the engines are built from: after a detector change the
+    # published file can still describe the previous model and the delta
+    # column would then compare two different networks without saying so.
+    published = json.loads(Path("results/published/detection.json").read_text(encoding="utf-8"))
+    reference = next(
+        e for e in published["variants"].values() if e["detector"]["precision"] == "fp32"
+    )
+    if Path(reference["model"]).name != onnx.name:
+        raise SystemExit(
+            f"results/published/detection.json scores {reference['model']}, not {onnx.name}; "
+            "run scripts/evaluate.py and publish it before measuring the engines"
+        )
+    baseline = reference["metrics"]
 
     before = watch(5)
 
@@ -165,11 +180,6 @@ def main(argv: list[str] | None = None) -> int:
     builds = json.loads(build_report.read_text(encoding="utf-8"))
     detection = json.loads(detection_out.read_text(encoding="utf-8"))
     latency = json.loads(latency_out.read_text(encoding="utf-8"))
-    published = json.loads(Path("results/published/detection.json").read_text(encoding="utf-8"))
-    baseline = next(
-        e for e in published["variants"].values() if e["detector"]["precision"] == "fp32"
-    )["metrics"]
-
     accuracy = {v["detector"]["precision"]: v["metrics"] for v in detection["variants"].values()}
     timing = {r["precision"]: r for r in latency["results"]}
 

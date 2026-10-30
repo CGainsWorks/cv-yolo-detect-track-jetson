@@ -2,7 +2,7 @@
 #
 # What is missing and why.  ONNX Runtime's CUDA execution provider does not
 # register on the host that produced the published results: onnxruntime-gpu
-# lists it, the CUDA 12 and cuDNN 9 libraries are present, and the session
+# lists it, the CUDA 12 and cuDNN 9 libraries are present and the session
 # still falls back to the CPU provider.  Rather than publish a GPU row that is
 # secretly a CPU row, the ONNX rows are CPU only and the GPU numbers come from
 # the PyTorch backend.  docs/limitations.md carries the detail.
@@ -14,17 +14,17 @@
 
 variants:
   - name: onnx-cpu-fp32
-    model: models/yolov8n_edgetrack_fp32.onnx
+    model: models/yolox_tiny_edgetrack_fp32.onnx
     backend: onnx
     providers: [CPUExecutionProvider]
 
   - name: onnx-cpu-fp16
-    model: models/yolov8n_edgetrack_fp16.onnx
+    model: models/yolox_tiny_edgetrack_fp16.onnx
     backend: onnx
     providers: [CPUExecutionProvider]
 
   - name: onnx-cpu-int8
-    model: models/yolov8n_edgetrack_int8.onnx
+    model: models/yolox_tiny_edgetrack_int8.onnx
     backend: onnx
     providers: [CPUExecutionProvider]
 
@@ -32,23 +32,23 @@ variants:
   # head in float is worth its cost is a measurement rather than an assertion;
   # scripts/quantize_onnx.py explains what each one quantises.
   - name: onnx-cpu-int8-allconv
-    model: models/yolov8n_edgetrack_int8_allconv.onnx
+    model: models/yolox_tiny_edgetrack_int8_allconv.onnx
     backend: onnx
     providers: [CPUExecutionProvider]
 
   - name: onnx-cpu-int8-allops
-    model: models/yolov8n_edgetrack_int8_allops.onnx
+    model: models/yolox_tiny_edgetrack_int8_allops.onnx
     backend: onnx
     providers: [CPUExecutionProvider]
 
   - name: torch-cuda-fp32
-    model: models/yolov8n_edgetrack.pt
+    model: models/yolox_tiny_edgetrack.pt
     backend: torch
     device: cuda
     half: false
 
   - name: torch-cuda-fp16
-    model: models/yolov8n_edgetrack.pt
+    model: models/yolox_tiny_edgetrack.pt
     backend: torch
     device: cuda
     half: true
@@ -57,13 +57,13 @@ variants:
   # TensorRT container, which publishes them to results/published/tensorrt.json
   # rather than latency.json; never run on a Jetson.  See docs/jetson.md.
   - name: tensorrt-fp32
-    model: models/yolov8n_edgetrack_fp32.engine
+    model: models/yolox_tiny_edgetrack_fp32.engine
     backend: tensorrt
 
   - name: tensorrt-fp16
-    model: models/yolov8n_edgetrack_fp16.engine
+    model: models/yolox_tiny_edgetrack_fp16.engine
     backend: tensorrt
 
   - name: tensorrt-int8
-    model: models/yolov8n_edgetrack_int8.engine
+    model: models/yolox_tiny_edgetrack_int8.engine
     backend: tensorrt

@@ -2,7 +2,7 @@
 
 The backends differ in one thing only: how a float tensor becomes a raw output
 tensor.  Letterboxing, normalisation, decoding and NMS are identical across
-ONNX Runtime, TensorRT and PyTorch, and they live here so that a difference in
+ONNX Runtime, TensorRT and PyTorch and they live here so that a difference in
 mAP between FP32 and INT8 is a difference in the arithmetic and not a
 difference in how the boxes were rescaled.  ``tests/test_backends.py`` asserts
 that the backends agree box for box on the same input.
@@ -26,7 +26,7 @@ __all__ = [
     "letterbox",
     "undo_letterbox",
     "nms",
-    "decode_yolov8",
+    "decode_head",
 ]
 
 
@@ -43,8 +43,8 @@ class DetectorConfig:
         w, h = self.imgsz
         if w % 32 or h % 32:
             raise ValueError(
-                f"imgsz must be a multiple of 32 in both axes for a YOLOv8 stride-32 "
-                f"head, got {self.imgsz}"
+                f"imgsz must be a multiple of 32 in both axes for a stride-32 head, "
+                f"got {self.imgsz}"
             )
         if not 0.0 < self.conf_threshold < 1.0:
             raise ValueError(f"conf_threshold must be in (0, 1), got {self.conf_threshold}")
@@ -56,9 +56,10 @@ def letterbox(
     """Resize preserving aspect ratio and pad to ``size`` (width, height).
 
     Returns the padded image, the scale factor and the padding applied to the
-    left and top.  Padding is split evenly, which is what Ultralytics does at
-    inference time; putting it all on one side shifts every box by half the pad
-    and costs about a point of mAP on wide images.
+    left and top.  Padding is split evenly.  YOLOX's own preprocessing pads on
+    the bottom and right only; the network is fully convolutional so it does
+    not care and the frames in this dataset are already 640x384, so for the
+    published numbers no padding happens at all.
     """
     target_w, target_h = size
     h, w = image.shape[:2]
@@ -121,20 +122,22 @@ def nms(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> list[int
     return keep
 
 
-def decode_yolov8(
+def decode_head(
     output: np.ndarray,
     config: DetectorConfig,
     scale: float,
     pad: tuple[float, float],
     shape: tuple[int, int],
 ) -> list[Detection]:
-    """Turn a raw YOLOv8 head output into detections in original-image pixels.
+    """Turn a raw detection head into detections in original-image pixels.
 
-    The export produces ``(1, 4 + num_classes, num_anchors)`` with boxes in
-    ``cxcywh`` on the letterboxed image and per-class scores already through
-    the sigmoid.  There is no objectness channel; that is the v8 change from v5
-    and reading the tensor as if there were one silently shifts every class by
-    one index.
+    The exported graph produces ``(1, 4 + num_classes, num_anchors)`` with
+    boxes in ``cxcywh`` on the letterboxed image and one score per class,
+    already through the sigmoid.  For YOLOX the export folds objectness into
+    the class scores (``obj * cls``) and decodes the grid offsets inside the
+    graph, so there is no objectness channel left to read here;
+    ``edgetrack.detect.yolox_net.DeployYOLOX`` is where that happens.  Reading
+    the tensor as if there were one silently shifts every class by one index.
     """
     array = np.asarray(output)
     if array.ndim == 3:
@@ -237,7 +240,7 @@ class Detector(ABC):
         mid = time.perf_counter()
         output = self._forward(tensor)
         after = time.perf_counter()
-        detections = decode_yolov8(output, self.config, scale, pad, image.shape[:2])
+        detections = decode_head(output, self.config, scale, pad, image.shape[:2])
         end = time.perf_counter()
         self.last_preprocess_ms = (mid - start) * 1000.0
         self.last_inference_ms = (after - mid) * 1000.0
@@ -248,7 +251,7 @@ class Detector(ABC):
         """Run the network on a blank frame.
 
         Not optional on any accelerated backend.  The first ONNX Runtime CUDA
-        call allocates workspace and picks convolution algorithms, and the
+        call allocates workspace and picks convolution algorithms and the
         first TensorRT call pages the engine in; without this the first
         measured frame is five to fifty times the steady-state latency and the
         benchmark reports nonsense.

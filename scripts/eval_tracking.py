@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """MOTA, IDF1 and ID switches for each tracker on the test sequences.
 
-    python scripts/eval_tracking.py --model models/yolov8n_edgetrack_fp32.onnx \\
+    python scripts/eval_tracking.py --model models/yolox_tiny_edgetrack_fp32.onnx \\
                                     --trackers bytetrack deepsort \\
                                     --out results/tracking.json
 
 Detections are computed once per frame and shared by every tracker in the run.
 That is the point of the script: a comparison where each tracker ran its own
-detector would be comparing two things at once, and the difference between
+detector would be comparing two things at once and the difference between
 ByteTrack and DeepSORT is supposed to be a difference in association.
 
 ``--detections gt`` swaps the detector for the ground truth boxes, filtered by
@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--model", default="models/yolov8n_edgetrack_fp32.onnx", type=Path)
+    parser.add_argument("--model", default="models/yolox_tiny_edgetrack_fp32.onnx", type=Path)
     parser.add_argument("--backend", default="onnx")
     parser.add_argument("--data-root", default="data/processed", type=Path)
     parser.add_argument("--split", default="test")

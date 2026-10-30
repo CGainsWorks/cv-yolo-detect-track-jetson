@@ -9,7 +9,7 @@ where the object is.
 Implemented from the paper (Zhang et al., ECCV 2022) rather than vendored, for
 three reasons: the reference implementation ships with a YOLOX training stack
 this repository does not want, the version in Ultralytics is AGPL and would
-contaminate the runtime image, and the ID-switch attribution in
+contaminate the runtime image and the ID-switch attribution in
 ``src/edgetrack/metrics/idswitch.py`` needs hooks into the association stages
 that neither exposes.
 
@@ -19,9 +19,9 @@ The pass structure:
 2. split detections at ``track_thresh`` into high and low,
 3. match high detections against tracked *and* lost tracks by IoU,
 4. match low detections against the tracks still unmatched from step 3, using
-   a looser threshold, and only against tracks that were being tracked last
+   a looser threshold and only against tracks that were being tracked last
    frame,
-5. unmatched tracks go to lost, and are deleted after ``track_buffer`` frames,
+5. unmatched tracks go to lost and are deleted after ``track_buffer`` frames,
 6. unmatched high detections above ``det_thresh`` start new tracks.
 """
 
@@ -49,7 +49,7 @@ class ByteTrackConfig:
     ``tests/test_configs.py`` fails if the two drift apart.
     """
 
-    track_thresh: float = 0.5
+    track_thresh: float = 0.6
     det_thresh: float = 0.6
     low_thresh: float = 0.1
     match_thresh: float = 0.7
@@ -105,7 +105,7 @@ class ByteTrack(BaseTracker):
             # Cross-class association is almost always a mistake in a scene with
             # both people and vehicles: the boxes overlap constantly and the
             # classes are never confusable in practice.  Forbid it rather than
-            # penalise it, and record the choice here because it is the reason
+            # penalise it and record the choice here because it is the reason
             # this tracker beats the class-agnostic variant on IDF1 by a couple
             # of points in docs/tracking.md.
             track_classes = np.array([t.class_id for t in tracks])[:, None]
@@ -150,7 +150,7 @@ class ByteTrack(BaseTracker):
         # Stage 2: low-confidence detections against the tracks that were being
         # tracked last frame and did not match above.  Lost tracks are excluded
         # on purpose: a weak detection is not enough evidence to revive an
-        # identity that has been missing, and allowing it was worth roughly two
+        # identity that has been missing and allowing it was worth roughly two
         # extra ID switches per sequence in the ablation.
         remaining = [
             pool[i]

@@ -1,14 +1,16 @@
-# Detector.  yolov8n because the target is a Jetson Orin Nano: the s and m
-# variants fit in memory but leave no headroom for the tracker and the ROS2
-# stack on the same 15 W budget.
+# Detector.  YOLOX-Tiny, Apache-2.0 code and weights, because the target is a
+# Jetson Orin Nano and the deployment has to be usable commercially.  Tiny is
+# the size class nearest the YOLOv8n it replaced (5.0 million parameters
+# against 3.0 million); Nano is depthwise and gives up too much accuracy, S is
+# three times the compute.  docs/licences.md says why YOLOX rather than RTMDet
+# or D-FINE.
 
-architecture: yolov8n
-pretrained: yolov8n.pt        # COCO weights, fine-tuned from here
+architecture: yolox_tiny
+pretrained: yolox_tiny.pth    # Megvii's COCO weights, fine-tuned from here
 num_classes: 4
 
-# Training runs square, inference runs at the native aspect.  See the note at
-# the top of scripts/train.py for why these differ.
-train_imgsz: 640
+# Training and inference both run at the native aspect.
+train_imgsz: [640, 384]       # width, height
 infer_imgsz: [640, 384]       # width, height
 
 nms:

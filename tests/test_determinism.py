@@ -2,14 +2,14 @@
 
 This is the claim the whole repository leans on.  `data/DATASET_CARD.md` says
 the set can be rebuilt from a seed, `scripts/run_demo.py` regenerates its
-ground truth from the source seed rather than caching it, and every published
+ground truth from the source seed rather than caching it and every published
 number is quoted against data nobody can otherwise obtain.  If generation were
 not reproducible, none of that would mean anything.
 
 Two files are excluded from the comparison and the reason is not a fudge.
-``data.yaml`` carries an absolute ``path:`` because Ultralytics resolves a
-relative one against its own per-user settings directory, and ``dataset.json``
-records the output root as provenance.  Both therefore differ between two runs
+``data.yaml`` carries an absolute ``path:`` because YOLO-format tooling
+resolves a relative one against its own per-user settings directory and
+``dataset.json`` records the output root as provenance.  Both therefore differ between two runs
 written to two different directories, by design.  Everything that is actually
 data, every image and every label, must match exactly.
 
@@ -93,7 +93,7 @@ def test_the_two_runs_hold_the_same_files(two_runs):
 
 
 def test_only_the_metadata_records_the_output_directory(two_runs):
-    """The exclusions are exactly the two files, and nothing else leaks a path.
+    """The exclusions are exactly the two files and nothing else leaks a path.
 
     Without this the exclusion list could quietly grow to cover a real
     reproducibility failure.

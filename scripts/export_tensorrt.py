@@ -20,7 +20,7 @@ activation histograms it observes, so calibrating on anything other than real
 preprocessed frames produces an engine whose dynamic range is wrong.
 
 *The calibration cache is written and reused.*  Calibration is the slow part of
-an INT8 build, several minutes on an Orin Nano, and it only depends on the
+an INT8 build, several minutes on an Orin Nano and it only depends on the
 network and the calibration set.  Caching it means a rebuild after a TensorRT
 upgrade costs seconds.
 
@@ -57,7 +57,7 @@ def _calibrator_class(trt, images, imgsz, cache_path, batch_size):
     """Build the calibrator class here, where ``trt`` is known to exist.
 
     Subclassing ``trt.IInt8EntropyCalibrator2`` at module scope would make this
-    file unimportable without TensorRT, and ``tests/test_scripts.py`` imports it
+    file unimportable without TensorRT and ``tests/test_scripts.py`` imports it
     to check the argument parser.
     """
     import pycuda.driver as cuda
@@ -203,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--onnx", default="models/yolov8n_edgetrack_fp32.onnx", type=Path)
+    parser.add_argument("--onnx", default="models/yolox_tiny_edgetrack_fp32.onnx", type=Path)
     parser.add_argument("--precision", default="fp16", choices=["fp32", "fp16", "int8"])
     parser.add_argument("--config", default="configs/export.yaml", type=Path)
     parser.add_argument("--data-root", default="data/processed", type=Path)

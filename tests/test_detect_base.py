@@ -13,7 +13,7 @@ import pytest
 
 from edgetrack.detect.base import (
     DetectorConfig,
-    decode_yolov8,
+    decode_head,
     letterbox,
     nms,
     undo_letterbox,
@@ -104,7 +104,7 @@ def test_decode_finds_the_planted_detections():
         [(100, 200, 40, 80), (500, 100, 60, 60)],
         [(0.9, 0.0, 0.0, 0.0), (0.0, 0.0, 0.8, 0.0)],
     )
-    detections = decode_yolov8(head, config, scale=1.0, pad=(0.0, 0.0), shape=(384, 640))
+    detections = decode_head(head, config, scale=1.0, pad=(0.0, 0.0), shape=(384, 640))
     assert len(detections) == 2
     assert [d.class_id for d in detections] == [0, 2]
     first = detections[0]
@@ -115,7 +115,7 @@ def test_decode_finds_the_planted_detections():
 def test_decode_respects_the_confidence_threshold():
     config = DetectorConfig(conf_threshold=0.5)
     head = _fake_head([(100, 200, 40, 80)], [(0.4, 0.0, 0.0, 0.0)])
-    assert decode_yolov8(head, config, 1.0, (0.0, 0.0), (384, 640)) == []
+    assert decode_head(head, config, 1.0, (0.0, 0.0), (384, 640)) == []
 
 
 def test_decode_suppresses_duplicates_within_a_class():
@@ -124,7 +124,7 @@ def test_decode_suppresses_duplicates_within_a_class():
         [(100, 200, 40, 80), (102, 202, 40, 80)],
         [(0.9, 0, 0, 0), (0.7, 0, 0, 0)],
     )
-    detections = decode_yolov8(head, config, 1.0, (0.0, 0.0), (384, 640))
+    detections = decode_head(head, config, 1.0, (0.0, 0.0), (384, 640))
     assert len(detections) == 1
     assert detections[0].score == pytest.approx(0.9)
 
@@ -135,26 +135,26 @@ def test_decode_does_not_suppress_across_classes_by_default():
         [(100, 200, 40, 80), (100, 200, 40, 80)],
         [(0.9, 0, 0, 0), (0, 0.8, 0, 0)],
     )
-    detections = decode_yolov8(head, config, 1.0, (0.0, 0.0), (384, 640))
+    detections = decode_head(head, config, 1.0, (0.0, 0.0), (384, 640))
     assert len(detections) == 2
 
     agnostic = DetectorConfig(conf_threshold=0.3, iou_threshold=0.5, agnostic_nms=True)
-    assert len(decode_yolov8(head, agnostic, 1.0, (0.0, 0.0), (384, 640))) == 1
+    assert len(decode_head(head, agnostic, 1.0, (0.0, 0.0), (384, 640))) == 1
 
 
 def test_decode_accepts_either_channel_order():
     config = DetectorConfig(conf_threshold=0.3)
     head = _fake_head([(100, 200, 40, 80)], [(0.9, 0, 0, 0)], n_anchors=32)
     transposed = np.ascontiguousarray(head.transpose(0, 2, 1))
-    a = decode_yolov8(head, config, 1.0, (0.0, 0.0), (384, 640))
-    b = decode_yolov8(transposed, config, 1.0, (0.0, 0.0), (384, 640))
+    a = decode_head(head, config, 1.0, (0.0, 0.0), (384, 640))
+    b = decode_head(transposed, config, 1.0, (0.0, 0.0), (384, 640))
     assert [d.xyxy for d in a] == [d.xyxy for d in b]
 
 
 def test_decode_rejects_a_head_with_no_class_channels():
     config = DetectorConfig()
     with pytest.raises(ValueError, match="expected 4 box coordinates"):
-        decode_yolov8(np.zeros((1, 4, 10)), config, 1.0, (0.0, 0.0), (384, 640))
+        decode_head(np.zeros((1, 4, 10)), config, 1.0, (0.0, 0.0), (384, 640))
 
 
 def test_decode_caps_the_detection_count():
@@ -162,7 +162,7 @@ def test_decode_caps_the_detection_count():
     boxes = [(50 + 200 * i, 100, 20, 20) for i in range(8)]
     scores = [(0.2 + 0.05 * i, 0, 0, 0) for i in range(8)]
     head = _fake_head(boxes, scores, n_anchors=16)
-    detections = decode_yolov8(head, config, 1.0, (0.0, 0.0), (384, 1800))
+    detections = decode_head(head, config, 1.0, (0.0, 0.0), (384, 1800))
     assert len(detections) == 3
     assert detections == sorted(detections, key=lambda d: -d.score)
 

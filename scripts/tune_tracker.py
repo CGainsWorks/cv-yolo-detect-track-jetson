@@ -5,7 +5,7 @@
     python scripts/tune_tracker.py --tracker deepsort --out results/tuning_deepsort.json
 
 Tuned on val, reported on test.  Choosing thresholds on the split the headline
-numbers come from would make those numbers a training score, and the effect is
+numbers come from would make those numbers a training score and the effect is
 not small: on this data the best and worst settings in the sweep below differ
 by more than ten points of IDF1.
 
@@ -112,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--tracker", default="bytetrack", choices=sorted(GRIDS))
-    parser.add_argument("--model", default="models/yolov8n_edgetrack_fp32.onnx", type=Path)
+    parser.add_argument("--model", default="models/yolox_tiny_edgetrack_fp32.onnx", type=Path)
     parser.add_argument("--backend", default="onnx")
     parser.add_argument("--data-root", default="data/processed", type=Path)
     parser.add_argument("--split", default="val")

@@ -1,7 +1,9 @@
 """On-disk dataset layout: YOLO for detection, MOTChallenge for tracking.
 
-Two layouts because the two jobs want different things.  Ultralytics wants a
-flat directory of images with a sibling directory of one text file per image.
+Two layouts because the two jobs want different things.  Detector training
+wants a flat directory of images with a sibling directory of one text file per
+image, the YOLO layout most detection tooling reads; ``scripts/train.py``
+converts it to the COCO JSON YOLOX takes, once per split.
 Tracking evaluation wants whole sequences with a single ground-truth file each,
 in MOTChallenge column order, so that `py-motmetrics` and every other MOT tool
 can read it without a shim.  Both are written from the same generator, so they
@@ -98,7 +100,7 @@ def write_split(
 
     A box is written to the YOLO label file only if its visibility is at or
     above ``cfg.min_label_visibility``.  Training a detector on boxes that are
-    ninety percent behind a shelf teaches it to hallucinate, and the MOT ground
+    ninety percent behind a shelf teaches it to hallucinate and the MOT ground
     truth keeps the full set with the visibility column intact, so nothing is
     lost for the tracking metrics.
     """
@@ -175,7 +177,7 @@ def write_mot_sequence(seq_dir: Path, cfg: SynthConfig, rows: list[tuple]) -> No
         ),
     )
     # newline is pinned here for the same reason write_text_lf exists: a MOT
-    # ground-truth file written with CRLF is still parseable, but the digest
+    # ground-truth file written with CRLF is still parseable but the digest
     # comparison in tests/test_determinism.py would then depend on the platform
     # that generated it.
     with (seq_dir / "gt" / "gt.txt").open("w", newline="\n", encoding="utf-8") as handle:
@@ -190,7 +192,7 @@ def read_mot_gt(path: Path, min_visibility: float = 0.0) -> dict[int, list[tuple
 
     Frames come back zero-based, matching everything else in this repository.
     Rows below ``min_visibility`` are dropped: a box that is ninety percent
-    occluded is not something a detector can reasonably be scored against, and
+    occluded is not something a detector can reasonably be scored against and
     the MOTChallenge protocol excludes them too.
     """
     by_frame: dict[int, list[tuple[int, int, np.ndarray]]] = {}

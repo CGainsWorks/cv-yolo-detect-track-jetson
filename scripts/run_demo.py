@@ -39,7 +39,7 @@ def synthetic_truth(seed: int, n_frames: int, min_visibility: float) -> tuple[di
     """Ground truth for a synth source, regenerated from the same seed.
 
     Regenerating rather than caching is the point: if the generator ever
-    changed, the demo's ground truth would change with the frames it scores,
+    changed, the demo's ground truth would change with the frames it scores
     and a mismatch would show up as an impossible metric instead of a silent
     lie.
     """
@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--source", default="synth:7")
-    parser.add_argument("--model", default="models/yolov8n_edgetrack_fp32.onnx", type=Path)
+    parser.add_argument("--model", default="models/yolox_tiny_edgetrack_fp32.onnx", type=Path)
     parser.add_argument("--backend", default="onnx")
     parser.add_argument("--tracker", default="bytetrack")
     parser.add_argument("--appearance", default="histogram", choices=["histogram", "reid"])
@@ -96,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     detector = build_detector(args.model, args.backend, config)
     detector.warmup(5)
     # Captured before the pipeline is closed.  A backend that has released its
-    # session cannot describe itself, and reading `info` after `close()` is a
+    # session cannot describe itself and reading `info` after `close()` is a
     # crash rather than a stale value.
     detector_info = detector.info.as_dict()
 

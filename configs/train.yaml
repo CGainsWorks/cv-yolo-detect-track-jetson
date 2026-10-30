@@ -1,40 +1,59 @@
-# Fine-tuning schedule.  Read by scripts/train.py and passed straight through
-# to ultralytics, so every key here is an Ultralytics training argument.
+# Fine-tuning schedule.  Read by scripts/train.py; every key under `exp` is an
+# attribute of yolox.exp.Exp and is set on it verbatim.
+#
+# The starting point is Megvii's COCO checkpoint for YOLOX-Tiny, Apache-2.0,
+# from the YOLOX GitHub release 0.1.1rc0.  scripts/train.py downloads it on
+# first run and refuses a file whose digest does not match the one below.
 
-model: yolov8n.pt
-device: 0
+architecture: yolox_tiny
+pretrained:
+  url: https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_tiny.pth
+  file: yolox_tiny.pth
+  sha256: 9de513de589ac98bb92d3bca53b5af7b9acfa9b0bacb831f7999d0f7afaee8f0
+  licence: Apache-2.0
 
-train:
-  epochs: 60
-  batch: 32
-  imgsz: 640
-  workers: 4
-  seed: 0
-  deterministic: true
-  patience: 20
-  optimizer: auto
-  lr0: 0.01
-  lrf: 0.01
-  cos_lr: true
+batch: 32
+fp16: true          # mixed precision training, not an FP16 model
+seed: 0
+
+exp:
+  # Training runs at the native 640x384 aspect, (height, width) in YOLOX's
+  # order, with YOLOX's multi-scale jitter of five strides either side.  The
+  # head is fully convolutional, so export and inference at 640x384 is the
+  # same network.
+  input_size: [384, 640]
+  test_size: [384, 640]
+  multiscale_range: 5
+
+  max_epoch: 60
   warmup_epochs: 3
-  close_mosaic: 10
-  val: true
-  plots: true
-  cache: false
+  no_aug_epochs: 10        # the last ten epochs without mosaic
+  basic_lr_per_img: 0.00015625   # 0.01 / 64, YOLOX's default
+  min_lr_ratio: 0.05
+  weight_decay: 0.0005
+  momentum: 0.9
+  ema: true
+  eval_interval: 10
+  print_interval: 20
+  save_history_ckpt: false
+  data_num_workers: 4
 
-  # Augmentation.  Colour jitter is turned down hard on purpose: instance
-  # colour is the only appearance cue DeepSORT has on this dataset, and an
-  # aggressive HSV augmentation teaches the detector to ignore exactly the
-  # signal the tracker depends on.  Geometric augmentation is left alone.
-  hsv_h: 0.005
-  hsv_s: 0.3
-  hsv_v: 0.3
+  # Augmentation.  Colour jitter is off on purpose: instance colour is the
+  # only appearance cue DeepSORT has on this dataset and YOLOX's HSV
+  # augmentation has fixed gains of five hue steps and thirty saturation and
+  # value steps, which teaches the detector to ignore exactly the signal the
+  # tracker depends on.  Geometric augmentation matches the previous schedule:
+  # no rotation or shear, ten per cent translation, scale 0.6 to 1.4.
+  hsv_prob: 0.0
+  flip_prob: 0.5
   degrees: 0.0
-  translate: 0.1
-  scale: 0.4
   shear: 0.0
-  perspective: 0.0
-  flipud: 0.0
-  fliplr: 0.5
-  mosaic: 1.0
-  mixup: 0.0
+  translate: 0.1
+  mosaic_prob: 1.0
+  mosaic_scale: [0.6, 1.4]
+  enable_mixup: false
+  mixup_prob: 0.0
+
+  # Evaluation inside the trainer, on the val split.
+  test_conf: 0.01
+  nmsthre: 0.65

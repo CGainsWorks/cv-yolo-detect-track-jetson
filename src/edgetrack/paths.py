@@ -1,9 +1,9 @@
 """Path serialisation, so a results file written on Windows reads on Linux.
 
-Every script in this repository writes JSON containing paths, and every one of
+Every script in this repository writes JSON containing paths and every one of
 those files is committed under ``results/published/`` and read back by
 ``scripts/make_results_table.py`` and by CI.  A path serialised as
-``models\\yolov8n_edgetrack_fp32.onnx`` is not merely ugly on a Linux runner:
+``models\\yolox_tiny_edgetrack_fp32.onnx`` is not merely ugly on a Linux runner:
 ``Path(that).name`` returns the whole string, because a backslash is a legal
 filename character on POSIX rather than a separator.  The table joins on the
 file name, so the join silently finds nothing and the regenerated CSV differs
@@ -11,7 +11,7 @@ from the committed one.  That failure surfaces as a diff in CI with no
 explanation attached to it.
 
 So every path that reaches a JSON file goes through :func:`serialise_path`
-first, and ``tests/test_published_results.py`` fails if a committed results
+first and ``tests/test_published_results.py`` fails if a committed results
 file contains a backslash or a drive letter.
 """
 
@@ -46,7 +46,7 @@ def path_name(value: str) -> str:
     """The final component of a serialised path, POSIX rules on any platform.
 
     ``PurePosixPath`` rather than ``Path``: the input is always POSIX by the
-    time it is in a results file, and using the platform flavour would make
+    time it is in a results file and using the platform flavour would make
     this function's answer depend on where it runs, which is the bug it exists
     to prevent.
     """
@@ -58,7 +58,7 @@ def write_text_lf(path: str | os.PathLike[str], text: str) -> None:
 
     ``Path.write_text`` translates newlines to the platform default, so a file
     generated on Windows comes out CRLF.  ``.gitattributes`` normalises the
-    committed copy to LF, CI regenerates it on Linux and diffs the two, and the
+    committed copy to LF, CI regenerates it on Linux and diffs the two and the
     result is a diff in which every line differs and every line is identical.
     Every script that writes a committed artefact goes through here.
     """

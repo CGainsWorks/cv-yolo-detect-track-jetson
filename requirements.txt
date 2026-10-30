@@ -1,12 +1,11 @@
-# Runtime.  What the deployed image and the ROS2 node need, and nothing else.
+# Runtime.  What the deployed image and the ROS2 node need and nothing else.
 # Python 3.10 or newer; 3.12 produced the published results.
 #
-# Deliberately absent: torch and ultralytics.  The detector runs on ONNX Runtime
-# or TensorRT and the appearance encoder runs on ONNX Runtime, so neither is
-# needed once the artefacts exist.  Ultralytics is AGPL-3.0, so keeping its
-# code out of the runtime keeps the image's code MIT; the detector weights it
-# loads are still AGPL-3.0 derived.  docs/licences.md has the detail and
-# tests/test_runtime_boundary.py enforces the code boundary.
+# Deliberately absent: torch and yolox.  The detector runs on ONNX Runtime or
+# TensorRT and the appearance encoder runs on ONNX Runtime, so neither is
+# needed once the artefacts exist.  The detector is YOLOX-Tiny, Apache-2.0 code
+# and weights; docs/licences.md has the detail and
+# tests/test_runtime_boundary.py enforces the boundary.
 
 numpy>=1.26,<3
 scipy>=1.11,<2

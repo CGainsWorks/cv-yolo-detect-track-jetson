@@ -17,7 +17,7 @@ else
     PY=${PYTHON:-python3}
 fi
 
-MODEL=models/yolov8n_edgetrack_fp32.onnx
+MODEL=models/yolox_tiny_edgetrack_fp32.onnx
 if [ ! -f "$MODEL" ]; then
     echo "fetching the published weights"
     "$PY" scripts/fetch_model.py

@@ -1,14 +1,14 @@
-"""The runtime does not import torch, ultralytics or rclpy.
+"""The runtime does not import torch, yolox, ultralytics or rclpy.
 
-This is a licence boundary and a size boundary at once.  Ultralytics is
-AGPL-3.0 and this repository's code is MIT, so the runtime code should not
-import it.  That does not make the deployment free of the AGPL: the detector
-weights are fine-tuned from Ultralytics' AGPL-3.0 checkpoint, which
-``docs/licences.md`` states plainly.  Torch is
-roughly two gigabytes of wheel that the deployed image has no use for once the
-model is an ONNX file.  ``docker/Dockerfile.runtime`` builds without either and
-the docker CI job asserts the same thing from the outside; this test asserts it
-from the inside, where it fails in seconds rather than after an image build.
+This is a size boundary first.  Torch is roughly two gigabytes of wheel and
+YOLOX's training package pulls it in and the deployed image has no use for
+either once the model is an ONNX file.  It is also the record of a licence
+boundary: the detector used to be Ultralytics YOLOv8, which is AGPL-3.0 and
+ultralytics stays on the forbidden list so that nothing reintroduces it
+quietly.  ``docs/licences.md`` has the history.  ``docker/Dockerfile.runtime``
+builds without any of them and the docker CI job asserts the same thing from
+the outside; this test asserts it from the inside, where it fails in seconds
+rather than after an image build.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ RUNTIME_MODULES = [
     "edgetrack.ros2.messages",
 ]
 
-FORBIDDEN = ("torch", "ultralytics", "rclpy", "matplotlib")
+FORBIDDEN = ("torch", "yolox", "ultralytics", "rclpy", "matplotlib")
 
 
 @pytest.mark.parametrize("module", RUNTIME_MODULES)
@@ -45,7 +45,7 @@ def test_module_imports_nothing_forbidden(module):
     """Import in a fresh interpreter and check ``sys.modules`` afterwards.
 
     A fresh process is the only honest way to test this.  Inside the pytest
-    process torch is already imported by some other test, and a check against
+    process torch is already imported by some other test and a check against
     the current ``sys.modules`` would pass regardless.
     """
     script = (
@@ -81,6 +81,25 @@ def test_the_reid_network_module_is_not_reachable_from_the_runtime():
     assert result.stdout.strip() == "False"
 
 
+def test_the_yolox_network_module_is_not_reachable_from_the_runtime():
+    """``edgetrack.detect.yolox_net`` imports torch and yolox.
+
+    It is imported by the training and export scripts and by the PyTorch
+    backend, which the factory loads lazily; the deployed path goes through
+    the ONNX or TensorRT backend and must never reach it.
+    """
+    script = (
+        "import sys; sys.path.insert(0, r'{src}');"
+        "import edgetrack.pipeline, edgetrack.detect, edgetrack.detect.onnx_backend;"
+        "print('edgetrack.detect.yolox_net' in sys.modules)"
+    ).format(src=ROOT / "src")
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, timeout=180
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "False"
+
+
 def test_the_ros2_node_module_says_something_useful_without_ros():
     """Importing the node off ROS must not be a bare ImportError traceback."""
     script = (
@@ -102,7 +121,7 @@ def test_requirements_do_not_contain_the_training_toolchain():
         for line in text.splitlines()
         if line.strip() and not line.strip().startswith("#")
     ]
-    for banned in ("torch", "torchvision", "ultralytics"):
+    for banned in ("torch", "torchvision", "yolox", "ultralytics"):
         assert not any(line.startswith(banned) for line in lines), (
             f"{banned} is in requirements.txt; it belongs in requirements-train.txt"
         )

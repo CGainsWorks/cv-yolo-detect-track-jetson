@@ -1,4 +1,4 @@
-# The dataset contract.  scripts/make_dataset.py writes the Ultralytics-facing
+# The dataset contract.  scripts/make_dataset.py writes the YOLO-format
 # data/processed/data.yaml; this file is the human-facing record of what the
 # set is and it is checked against edgetrack.data.synth by tests/test_configs.py.
 

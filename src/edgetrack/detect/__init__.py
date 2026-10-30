@@ -2,7 +2,7 @@
 
 The factory is where ``--backend`` and ``--precision`` are resolved into a
 concrete class.  Backend modules are imported lazily so that asking for ONNX
-Runtime does not require torch to be installed, and asking for TensorRT does
+Runtime does not require torch to be installed and asking for TensorRT does
 not fail at import time on a machine that has neither.
 """
 
@@ -15,7 +15,7 @@ from .base import (
     BackendInfo,
     Detector,
     DetectorConfig,
-    decode_yolov8,
+    decode_head,
     letterbox,
     nms,
     undo_letterbox,
@@ -26,7 +26,7 @@ __all__ = [
     "Detector",
     "DetectorConfig",
     "build_detector",
-    "decode_yolov8",
+    "decode_head",
     "letterbox",
     "nms",
     "undo_letterbox",
@@ -48,7 +48,7 @@ def build_detector(
     """Construct a detector.
 
     ``backend`` is the runtime, not the precision.  Precision comes from the
-    artefact: an FP16 ONNX file is FP16 whichever provider runs it, and the
+    artefact: an FP16 ONNX file is FP16 whichever provider runs it and the
     only backend where precision is a constructor argument is PyTorch, where
     ``half`` selects it.  Keeping that distinction is why the results table can
     say "onnxruntime, int8" and mean something exact.
