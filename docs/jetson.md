@@ -1,11 +1,22 @@
 # The Jetson, and the fact that there isn't one
 
-**Nothing in this repository has run on a Jetson.**  No TensorRT engine has been
-built, no INT8 calibration has gone through TensorRT's calibrator, and no
-latency number in `benchmarks/results.csv` came from edge hardware.  Every
+**Nothing in this repository has run on a Jetson.**  No latency number in
+`benchmarks/results.csv` or anywhere else came from edge hardware.  Every
 published measurement was taken on a desktop with an RTX 4060 and a Ryzen 7
 5700X.  `scripts/benchmark_latency.py` stamps `device_class` into every results
 file and CI fails if a published file ever claims otherwise.
+
+**The TensorRT path has run, on the desktop.**  `make tensorrt-desktop` builds
+FP32, FP16 and INT8 engines with `scripts/export_tensorrt.py` inside NVIDIA's
+`nvcr.io/nvidia/tensorrt:25.06-py3` container (TensorRT `10.11`, CUDA `12.9`) on the
+RTX 4060 under WSL2, scores them on the test split and times them through
+`edgetrack.detect.trt_backend`.  The results, with the driver, CUDA and
+TensorRT versions and the GPU and CPU contention state, are in
+`results/published/tensorrt.json` and in the generated tables in the README
+and `docs/results.md`.  The first real INT8 build found a bug, a calibrator
+with no CUDA context, which is fixed.  The build times in that file come from
+the first build, when other containers were using the CPU, so treat them as
+indicative only.
 
 That is a real gap and this page is about the shape of it: what exists, what
 would have to happen, and which of the conclusions in `docs/results.md` would
@@ -17,13 +28,15 @@ survive contact with the board.
 
 | Piece | State |
 | --- | --- |
-| `src/edgetrack/detect/trt_backend.py` | Written, never executed.  Handles the TensorRT 8 binding-index API and the TensorRT 10 tensor-name API, because Jetpack 5 and Jetpack 6 sit on either side of that change. |
-| `scripts/export_tensorrt.py` | Written, never executed.  Builds FP32, FP16 and INT8 engines, with an entropy calibrator that streams the same preprocessed frames the deployed model sees, and a calibration cache so a rebuild after a TensorRT upgrade is cheap. |
+| `src/edgetrack/detect/trt_backend.py` | TensorRT 10 tensor-name path run on the desktop RTX 4060, at three precisions over the full test split.  The TensorRT 8 binding-index path, kept for Jetpack 5, has not run anywhere. |
+| `scripts/export_tensorrt.py` | Run on the desktop RTX 4060 at FP32, FP16 and INT8.  The entropy calibrator streams the same preprocessed frames the deployed model sees and writes a calibration cache. |
+| `docker/Dockerfile.tensorrt`, `scripts/measure_tensorrt.py` | The desktop TensorRT image and the script that builds, scores, times and records.  Run. |
+| `tests/test_tensorrt_api.py` | Run in CI by the `tensorrt-api` job against the pinned `tensorrt-cu12` wheel in `requirements-tensorrt.txt`, on a runner with no GPU. |
 | `docker/Dockerfile.jetson` | Written, never built.  The base image is arm64 and needs an NGC login, so it will not build on a CI runner. |
 | `scripts/bench_jetson.sh` | Written, never executed.  Pins the clocks, runs the benchmark at each power mode and writes `benchmarks/latency_jetson.md`. |
 | `requirements-jetson.txt` | Written, never installed. |
 
-The interface those five agree on is fixed by
+The interface the Jetson pieces agree on is fixed by
 `edgetrack.detect.base.Detector`, which the ONNX Runtime backend already
 satisfies and which the benchmark already drives.  So the work on the day the
 board arrives is running commands, not writing a backend.
@@ -83,12 +96,13 @@ convolution, batch normalisation and activation into single kernels in a way
 ONNX Runtime's CPU provider does not.  The *ordering* of the precisions would
 probably hold; the ratios would not, and the ratios are the interesting part.
 
-**Genuinely unknown.**  The INT8 accuracy on TensorRT.  This repository measures
-INT8 through ONNX Runtime's static QDQ quantisation with a MinMax calibrator.
-TensorRT uses its own entropy calibrator, fuses differently and picks its own
-per-layer precision, so its INT8 mAP could land either side of the number here.
-The measurement in `docs/results.md` bounds the question rather than answering
-it, and it is labelled that way there.
+**Answered on the desktop and expected to carry over.**  The INT8 accuracy on
+TensorRT.  It was unknown when this page was first written; the desktop run
+measured it and it landed on the wrong side: TensorRT's entropy calibrator
+with implicit quantisation quantises the detection head and loses 0.06408
+mAP@0.5:0.95, more than ONNX Runtime's head-excluded INT8.  The same TensorRT
+version on a board does the same arithmetic, so the accuracy should carry over
+closely; the kernels it picks will differ, so not bit for bit.
 
 Also unknown: whether the tracker keeps up.  The published end-to-end numbers
 show the detector dominating on a desktop, but the appearance encoder runs once
@@ -114,6 +128,23 @@ guesses until it has been:
   being an option and not.
 
 ---
+
+## What CI checks and the manual step
+
+A hosted runner has no GPU.  The pinned TensorRT wheel installs and imports
+there but `trt.Builder` needs a CUDA driver and aborts the process without
+one, so CI cannot create a network definition, parse the ONNX graph or build
+an engine.  The `tensorrt-api` job does what is possible: it imports the
+backend, resolves every `trt.*` symbol the backend and the engine builder use
+against the pinned wheel and builds the INT8 calibrator on TensorRT's real base
+class.  Building and measuring engines stays a manual step on a machine with an
+NVIDIA GPU:
+
+```bash
+make tensorrt-desktop      # docker build + run --gpus all --network none
+```
+
+On a Jetson the commands in "What would have to happen" above still apply.
 
 ## Cost
 

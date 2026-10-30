@@ -1,0 +1,41 @@
+# Desktop TensorRT image: the repository's own TensorRT path on an x86 NVIDIA GPU.
+#
+# This is not the Jetson image.  It exists so that scripts/export_tensorrt.py and
+# edgetrack.detect.trt_backend run for real somewhere, on the desktop RTX 4060
+# that produced every other number here, instead of waiting for a board.  The
+# numbers it produces are desktop numbers and are labelled that way in
+# results/published/tensorrt.json and in every table generated from it.
+#
+# The base is NVIDIA's official TensorRT container, pinned by tag:
+#   25.06-py3   TensorRT 10.11.0.33, CUDA 12.9.1, Python 3.12, pycuda 2025.1.1
+# It needs a driver new enough for CUDA 12.9 and, under WSL2, Docker Desktop's
+# GPU support (`docker run --gpus all`).  The runtime dependencies are pinned
+# to versions built against the image's NumPy 1.26, because the bundled pycuda
+# is compiled against NumPy 1.x and will not import under NumPy 2.
+#
+#   docker build -f docker/Dockerfile.tensorrt -t edgetrack:tensorrt .
+#   make tensorrt-desktop        # builds the engines and measures them
+#
+# Engines built inside it are tied to this GPU, driver and TensorRT version and
+# are never committed.
+
+ARG TRT_TAG=25.06-py3
+FROM nvcr.io/nvidia/tensorrt:${TRT_TAG}
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/work/src
+
+RUN python3 -m pip install --no-cache-dir \
+      numpy==1.26.4 \
+      scipy==1.15.3 \
+      opencv-python-headless==4.11.0.86 \
+      PyYAML==6.0.2 \
+      tqdm==4.67.1 \
+      onnxruntime==1.22.0 \
+ && python3 -c "import tensorrt, pycuda, cv2, numpy; print(tensorrt.__version__, numpy.__version__)"
+
+# The repository is bind mounted here at run time rather than copied, so the
+# engines and results land in the working tree where make_results_table.py
+# reads them.
+WORKDIR /work

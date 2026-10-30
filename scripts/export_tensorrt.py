@@ -4,16 +4,15 @@
     python scripts/export_tensorrt.py --precision fp16
     python scripts/export_tensorrt.py --precision int8 --calib-images 512
 
-**This script has never been executed.**  There is no Jetson and no TensorRT
-installation on the machine that produced the published results, so nothing in
-``results/published/`` or ``benchmarks/results.csv`` came from here.  It is
-committed because the interface it targets is fixed by
-``edgetrack.detect.trt_backend`` and because writing it now is what makes the
-hardware step a matter of running a command rather than a matter of design.
-``docs/jetson.md`` carries the full procedure and the honest gap list.
+**Run on a desktop GPU, never on a Jetson.**  ``make tensorrt-desktop`` runs it
+inside NVIDIA's TensorRT 10 container on the desktop RTX 4060 that produced the
+other results, at all three precisions; ``results/published/tensorrt.json``
+records the engine sizes and build times.  The first real INT8 build found a
+bug (the calibrator had no CUDA context), fixed below.  No Jetson was
+available, so the board-side run in ``docs/jetson.md`` is still to do and the
+TensorRT 8 fallbacks here have not run anywhere.
 
-Two things this script does that a minimal one would not, both learned from the
-shape of the problem rather than from running it:
+Two things this script does that a minimal one would not:
 
 *The INT8 calibrator streams the same preprocessed images the deployed model
 will see.*  TensorRT's entropy calibrator picks per-tensor scales from the
@@ -121,8 +120,17 @@ def build(
 ) -> dict:
     try:
         import tensorrt as trt
-    except ImportError as error:  # pragma: no cover - no TensorRT anywhere here
+    except ImportError as error:  # pragma: no cover - needs TensorRT
         raise ImportError(_MISSING) from error
+
+    if precision == "int8":
+        # The calibrator allocates its device buffer through pycuda and pycuda
+        # needs a current CUDA context to do that.  Creating it here, before the
+        # builder, also means TensorRT picks up the same context rather than
+        # the runtime's primary one, so the pointer the calibrator hands back is
+        # valid where TensorRT reads it.  The first real INT8 build found this:
+        # without it pycuda raised "invalid device context" on the first batch.
+        import pycuda.autoinit  # noqa: F401
 
     logger = trt.Logger(trt.Logger.INFO)
     builder = trt.Builder(logger)

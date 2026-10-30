@@ -1,0 +1,94 @@
+{
+  "device": "desktop RTX 4060, not a Jetson",
+  "host": {
+    "gpu": "NVIDIA GeForce RTX 4060",
+    "gpu_memory_mib": 8188,
+    "driver": "591.86",
+    "cuda_runtime": "12.9.1.010",
+    "tensorrt": "10.11.0.33",
+    "pycuda": "2025.1.1",
+    "container_image": "nvcr.io/nvidia/tensorrt:25.06-py3",
+    "under": "WSL2 Docker",
+    "cpu_count": 16
+  },
+  "gpu_contention": {
+    "idle_threshold_percent": 10,
+    "before": {
+      "samples": 5,
+      "utilisation_percent_max": 0,
+      "memory_used_mib_max": 1019,
+      "compute_processes_max": 0,
+      "cpu_load_1min_max": 2.42
+    },
+    "after": {
+      "samples": 5,
+      "utilisation_percent_max": 0,
+      "memory_used_mib_max": 1002,
+      "compute_processes_max": 0,
+      "cpu_load_1min_max": 3.18
+    },
+    "contended": false,
+    "busy_cpu_threshold_load": 4.0,
+    "cpu_busy": false,
+    "host_note": "host nvidia-smi, sampled every 5 s through the run, listed no other compute process"
+  },
+  "split": "test",
+  "images": 1440,
+  "onnxruntime_fp32_map50_95": 0.86495,
+  "iterations": 300,
+  "warmup": 30,
+  "tracker": "bytetrack",
+  "rows": [
+    {
+      "variant": "tensorrt-fp32",
+      "precision": "fp32",
+      "engine_bytes": 17607164,
+      "build_seconds": 68.6,
+      "calibration_images": 0,
+      "map50": 0.97271,
+      "map50_95": 0.86478,
+      "precision_metric": 0.95962,
+      "recall": 0.95456,
+      "map50_95_delta_vs_onnxruntime_fp32": -0.00017,
+      "inference_p50_ms": 2.082,
+      "inference_p95_ms": 2.931,
+      "detect_total_p50_ms": 3.717,
+      "end_to_end_p50_ms": 5.487,
+      "fps_end_to_end": 178.51
+    },
+    {
+      "variant": "tensorrt-fp16",
+      "precision": "fp16",
+      "engine_bytes": 10150748,
+      "build_seconds": 201.0,
+      "calibration_images": 0,
+      "map50": 0.9727,
+      "map50_95": 0.86488,
+      "precision_metric": 0.95999,
+      "recall": 0.9548,
+      "map50_95_delta_vs_onnxruntime_fp32": -7e-05,
+      "inference_p50_ms": 1.517,
+      "inference_p95_ms": 2.355,
+      "detect_total_p50_ms": 3.228,
+      "end_to_end_p50_ms": 5.556,
+      "fps_end_to_end": 177.37
+    },
+    {
+      "variant": "tensorrt-int8",
+      "precision": "int8",
+      "engine_bytes": 8310276,
+      "build_seconds": 382.7,
+      "calibration_images": 256,
+      "map50": 0.95465,
+      "map50_95": 0.80087,
+      "precision_metric": 0.99515,
+      "recall": 0.88234,
+      "map50_95_delta_vs_onnxruntime_fp32": -0.06408,
+      "inference_p50_ms": 1.647,
+      "inference_p95_ms": 2.512,
+      "detect_total_p50_ms": 3.347,
+      "end_to_end_p50_ms": 5.239,
+      "fps_end_to_end": 188.64
+    }
+  ]
+}

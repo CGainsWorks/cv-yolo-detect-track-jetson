@@ -53,8 +53,9 @@ variants:
     device: cuda
     half: true
 
-  # Jetson only.  Never run on the machine that produced the published
-  # results; see docs/jetson.md.
+  # Need a built engine.  Run by `make tensorrt-desktop` inside NVIDIA's
+  # TensorRT container, which publishes them to results/published/tensorrt.json
+  # rather than latency.json; never run on a Jetson.  See docs/jetson.md.
   - name: tensorrt-fp32
     model: models/yolov8n_edgetrack_fp32.engine
     backend: tensorrt

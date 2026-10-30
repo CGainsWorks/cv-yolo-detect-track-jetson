@@ -17,8 +17,13 @@
 #              make train  make reid  make export  make quantise
 #              make evaluate  make track  make bench  make experiments
 #
+#   TENSORRT needs an NVIDIA GPU and Docker with GPU support.  Builds the
+#            engines in NVIDIA's TensorRT container on a desktop GPU and
+#            measures them; results/published/tensorrt.json came from here.
+#              make tensorrt-desktop
+#
 #   JETSON   needs a Jetson with TensorRT.  Never run: no board was available.
-#            No number in this repository came from these targets and
+#            No number in this repository came from a board and
 #            docs/jetson.md says so in more detail.
 #              make engine  make bench-jetson
 
@@ -206,11 +211,27 @@ publish:  ## Copy this run's results into results/published and refresh the tabl
 	$(MAKE) docs-check
 
 # ---------------------------------------------------------------------------
-# Jetson.  Never executed; see docs/jetson.md.
+# TensorRT on a desktop NVIDIA GPU, inside NVIDIA's container
+# ---------------------------------------------------------------------------
+
+TRT_TAG ?= 25.06-py3
+
+.PHONY: tensorrt-desktop
+tensorrt-desktop: $(DATA)/data.yaml | $(FP32)  ## Build and measure TensorRT engines on this GPU (Docker)
+	docker build -f docker/Dockerfile.tensorrt --build-arg TRT_TAG=$(TRT_TAG) \
+	  -t edgetrack:tensorrt .
+	docker run --rm --gpus all --network none \
+	  -e TRT_IMAGE=nvcr.io/nvidia/tensorrt:$(TRT_TAG) -v "$(CURDIR):/work" \
+	  edgetrack:tensorrt python3 scripts/measure_tensorrt.py
+	$(VENV_PY) scripts/make_results_table.py --quiet
+	$(VENV_PY) scripts/check_docs.py --fix-blocks
+
+# ---------------------------------------------------------------------------
+# Jetson.  Never executed on a board; see docs/jetson.md.
 # ---------------------------------------------------------------------------
 
 .PHONY: engine
-engine:  ## Build TensorRT engines (Jetson only, never run)
+engine:  ## Build TensorRT engines on this device (run on a desktop GPU, never on a Jetson)
 	$(VENV_PY) scripts/export_tensorrt.py --onnx $(FP32) --precision fp32
 	$(VENV_PY) scripts/export_tensorrt.py --onnx $(FP32) --precision fp16
 	$(VENV_PY) scripts/export_tensorrt.py --onnx $(FP32) --precision int8

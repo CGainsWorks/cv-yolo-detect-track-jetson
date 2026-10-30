@@ -6,10 +6,13 @@ Ordered by how much they should change your reading of the results.
 
 ## 1. There is no Jetson
 
-No TensorRT engine has been built and no measurement was taken on edge
-hardware.  Every latency number came from a desktop with an RTX 4060 and a
-Ryzen 7 5700X.  The TensorRT backend, the engine builder, the Jetson Dockerfile
-and the benchmark script are written and are untested code.
+No measurement was taken on edge hardware.  Every latency number came from a
+desktop with an RTX 4060 and a Ryzen 7 5700X.  The TensorRT backend and the
+engine builder have run on that desktop GPU in NVIDIA's container, so the
+TensorRT 10 code path is exercised; the Jetson Dockerfile, the Jetson benchmark
+script and the TensorRT 8 branch of the backend are still untested code.  CI
+has no GPU and checks the TensorRT code against the pinned wheel without
+building an engine.
 
 `docs/jetson.md` is the full account, including which conclusions would survive
 contact with a board and which would not.  The short version: the accuracy
@@ -96,13 +99,15 @@ numbers do include a domain shift.  The re-identification numbers do not.
 
 ---
 
-## 6. The INT8 accuracy is an ONNX Runtime measurement, not a TensorRT one
+## 6. Two INT8 numbers, from two quantisers, neither on a Jetson
 
-The published INT8 model is statically quantised with ONNX Runtime's MinMax
-calibrator, convolutions only, with the detection head's output convolutions
-left in float.  TensorRT uses a different calibrator, fuses layers differently
-and picks its own per-layer precision.  The measurement bounds what TensorRT
-INT8 would cost; it does not predict it.
+The published ONNX INT8 model is statically quantised with ONNX Runtime's
+MinMax calibrator, convolutions only, with the detection head's output
+convolutions left in float.  The TensorRT INT8 engine uses TensorRT's entropy
+calibrator with implicit quantisation, which quantises the head as well and
+costs several times as much accuracy.  Both were measured on the desktop.  A
+TensorRT engine with the head held at FP16 has not been built, so the best
+TensorRT INT8 accuracy is not known.
 
 ---
 

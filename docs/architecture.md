@@ -92,4 +92,4 @@ two things at once.
 | Tracking metrics | CPU | yes, through the demo |
 | Latency benchmark | the machine being measured | no |
 | ROS2 node | ROS2 Humble | yes, in a container with a real subscriber |
-| TensorRT engines | Jetson | no, and never run anywhere |
+| TensorRT engines | NVIDIA GPU, Docker | no GPU on the runners; the `tensorrt-api` job checks the code against the pinned wheel and `make tensorrt-desktop` built and measured them on a desktop RTX 4060, never on a Jetson |

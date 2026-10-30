@@ -1,19 +1,18 @@
-"""TensorRT backend for the Jetson.
+"""TensorRT backend for the Jetson, run so far on a desktop GPU only.
 
 Status, stated plainly because the rest of this repository asks you to trust
-its numbers: **no code in this file has ever been executed.**  There is no
-Jetson and no TensorRT installation on the machine that produced the published
-results, so this backend is unverified.  Nothing in ``results/published/`` came
-from it, ``benchmarks/results.csv`` carries no TensorRT row and CI does not
-import it.  ``docs/jetson.md`` says the same thing and lists the exact commands
-to run once hardware exists.
+its numbers: the TensorRT 10 path through this file has run for real on a
+desktop RTX 4060, inside NVIDIA's ``nvcr.io/nvidia/tensorrt`` container under
+WSL2 (``docker/Dockerfile.tensorrt``, ``make tensorrt-desktop``).  It scored
+and timed FP32, FP16 and INT8 engines and ``results/published/tensorrt.json``
+is what came out.  It has **not** run on a Jetson and the TensorRT 8 branch
+below (``execute_async_v2`` and the binding-index calls) has not run anywhere,
+because no TensorRT 8 installation was available.  ``docs/jetson.md`` lists
+what remains.
 
-Written now rather than later for two reasons.  It fixes the interface the rest
-of the pipeline expects from an accelerated backend, so
-``scripts/benchmark_latency.py`` needs no changes on the day the board arrives,
-and it makes the shape of the work visible: the awkward part of a TensorRT
-deployment is the memory management and the version drift below, not the
-conversion.
+CI cannot run it: a hosted runner has no GPU.  The ``tensorrt-api`` CI job
+checks every TensorRT symbol used here against the pinned wheel in
+``requirements-tensorrt.txt`` instead.
 
 Version handling.  TensorRT 8 binds by index through ``execute_async_v2`` and
 TensorRT 10 binds by tensor name through ``execute_async_v3``.  Both are

@@ -38,5 +38,5 @@ tensorrt:
   workspace_gb: 2
   precisions: [fp32, fp16, int8]
   int8_calibration_cache: models/calib.cache
-  # Never executed on the machine that produced the published results.  See
-  # docs/jetson.md.
+  # Built and measured on a desktop RTX 4060 by `make tensorrt-desktop`
+  # (results/published/tensorrt.json), never on a Jetson.  See docs/jetson.md.

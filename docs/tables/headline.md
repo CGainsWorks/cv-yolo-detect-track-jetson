@@ -9,6 +9,3 @@
 | `onnx-cpu-int8-allops` | onnxruntime | int8 | 0.0000 | 0.0000 | 11.81 ms | 12.93 ms | 15.49 ms | 65.8 |
 | `torch-cuda-fp32` | pytorch | fp32 | n/a | n/a | 8.93 ms | 9.84 ms | 13.56 ms | 72.2 |
 | `torch-cuda-fp16` | pytorch | fp16 | n/a | n/a | 11.67 ms | 13.07 ms | 16.51 ms | 58.3 |
-| `tensorrt-fp32` | tensorrt | | not measured | not measured | not measured | not measured | not measured | not measured |
-| `tensorrt-fp16` | tensorrt | | not measured | not measured | not measured | not measured | not measured | not measured |
-| `tensorrt-int8` | tensorrt | | not measured | not measured | not measured | not measured | not measured | not measured |
