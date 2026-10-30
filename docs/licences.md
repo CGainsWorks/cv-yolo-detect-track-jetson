@@ -25,21 +25,42 @@ Ultralytics YOLOv8 is AGPL-3.0.  It is used here to fine-tune the detector and
 to export the ONNX graphs, and it appears in `requirements-train.txt` and in
 `docker/Dockerfile.train`.
 
-Two claims about that, and they are different claims:
+**The published detector weights carry an AGPL-3.0 obligation and that blocks
+closed commercial use.**  Fine-tuning starts from Ultralytics' pretrained
+`yolov8n.pt` (`configs/model.yaml`), which Ultralytics distributes under
+AGPL-3.0.  The fine-tuned checkpoint and every graph exported from it
+(`yolov8n_edgetrack.pt`, the FP32, FP16 and INT8 ONNX files in the Release and
+any TensorRT engine built from them) are derived from those weights.
+Ultralytics' stated position is that models trained or fine-tuned with its
+software and weights fall under AGPL-3.0 unless the user holds an Ultralytics
+Enterprise Licence.  An earlier version of this page argued the opposite, that
+the weights are mere program output and said Ultralytics agreed.  That was
+wrong on the second point and is not a safe basis for the first, so it has
+been withdrawn.
 
-**The trained weights are not a derivative of Ultralytics' source.**  They are
-the output of running the program on data, in the same sense that a compiled
-binary is not a derivative of the compiler.  The AGPL attaches to the program
-and to modifications of it, not to what the program produces.  This is the
-standard reading and it is the one the Ultralytics licence FAQ itself takes.
+What that means in practice:
 
-**The deployed system does not use Ultralytics at all.**  The runtime loads an
+* Anyone deploying these weights, including over a network, must meet
+  AGPL-3.0: the complete corresponding source of the deployed system, under
+  AGPL-3.0, to every user who interacts with it.
+* A closed or commercial deployment needs either an Ultralytics Enterprise
+  Licence or a detector with no Ultralytics lineage.
+* The MIT licence on this repository covers the code written here.  It does
+  not relicense the weights and cannot.
+
+The fix is a detector with a permissive licence end to end, weights included:
+YOLOX, RTMDet or D-FINE, all Apache-2.0.  `STATUS.md` carries it as an open
+item.  It has not been done in this pass, so the detector and its numbers are
+unchanged.
+
+**What the runtime boundary does and does not achieve.**  The runtime loads an
 ONNX graph through ONNX Runtime, or a plan file through TensorRT, and imports
-neither ultralytics nor torch.  So the AGPL's network-use clause has nothing to
-attach to: the deployed program is not a modified Ultralytics.
+neither ultralytics nor torch.  That keeps Ultralytics' *code* out of the
+deployed image, which is worth having: it is the part a swap to an Apache-2.0
+detector would not need to touch.  It does not remove the obligation attached
+to the weights, which travel inside the ONNX graph whichever runtime loads it.
 
-The second claim is the load-bearing one and it is enforced rather than
-asserted:
+The code boundary is enforced rather than asserted:
 
 * `requirements.txt` contains neither torch nor ultralytics, and
   `tests/test_runtime_boundary.py` fails if either appears.
@@ -50,12 +71,12 @@ asserted:
   runs `import torch` and `import ultralytics` inside the built image and fails
   if either succeeds.
 
-If you would rather not depend on that reading at all, the escape hatch is
-short: the only Ultralytics-specific step is `model.export(format="onnx")`.
-Fine-tuning any YOLO-family detector that emits a `(1, 4 + num_classes,
-anchors)` head produces a graph this repository consumes without modification,
-because `edgetrack.detect.base.decode_yolov8` decodes that shape and nothing
-above it knows which trainer produced it.
+The swap is contained.  The only Ultralytics-specific steps are training and
+`model.export(format="onnx")`.  A detector whose graph emits a `(1, 4 +
+num_classes, anchors)` head is consumed without modification, because
+`edgetrack.detect.base.decode_yolov8` decodes that shape and nothing above it
+knows which trainer produced it.  YOLOX and RTMDet emit different heads, so a
+second decoder in `edgetrack.detect.base` is the likely size of the change.
 
 ---
 
@@ -73,12 +94,14 @@ above it knows which trainer produced it.
 | tqdm | MPL-2.0 and MIT | runtime |
 | PyTorch | BSD-3-Clause | training only |
 | py-motmetrics | MIT | tests only |
-| TensorRT | NVIDIA proprietary, redistributed with Jetpack | Jetson only, never used here |
-| pycuda | MIT | Jetson only, never used here |
+| TensorRT | NVIDIA proprietary | Jetpack on a Jetson; NVIDIA's container (`docker/Dockerfile.tensorrt`) and the pinned PyPI wheel (`requirements-tensorrt.txt`) on a desktop and in CI |
+| pycuda | MIT | the TensorRT backend and the INT8 calibrator |
 
-TensorRT is the one to watch.  It is not redistributable outside an NVIDIA
-platform, which is why `requirements-jetson.txt` does not list it and
-`docker/Dockerfile.jetson` gets it from the Jetpack base image instead.
+TensorRT is the one to watch.  It is proprietary and governed by NVIDIA's
+licence, which is why nothing here bundles it: the Jetson image takes it from
+the Jetpack base, the desktop image takes it from NVIDIA's own
+`nvcr.io/nvidia/tensorrt` container and CI installs NVIDIA's wheel at run time.
+Engines built with it are never committed.
 
 ---
 
@@ -91,7 +114,8 @@ handle.  `data/DATASET_CARD.md` says the same thing at more length and is
 honest about what that costs in realism.
 
 The pretrained COCO checkpoint that fine-tuning starts from is distributed by
-Ultralytics under AGPL-3.0 and is not redistributed here; `scripts/train.py`
-downloads it on first run.  COCO itself is CC BY 4.0 for the annotations, with
-the images under their original Flickr terms.  Neither appears in this
-repository and neither is used at inference.
+Ultralytics under AGPL-3.0; `scripts/train.py` downloads it on first run.  It is
+not redistributed here as such but the fine-tuned weights in the Release are
+derived from it, which is the obligation described above.  COCO itself is CC BY
+4.0 for the annotations, with the images under their original Flickr terms.
+No COCO image or annotation appears in this repository.

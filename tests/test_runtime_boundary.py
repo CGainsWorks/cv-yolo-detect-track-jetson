@@ -1,8 +1,10 @@
 """The runtime does not import torch, ultralytics or rclpy.
 
 This is a licence boundary and a size boundary at once.  Ultralytics is
-AGPL-3.0; this repository is MIT, and an MIT deployment that imports an AGPL
-library at runtime is not something to leave to good intentions.  Torch is
+AGPL-3.0 and this repository's code is MIT, so the runtime code should not
+import it.  That does not make the deployment free of the AGPL: the detector
+weights are fine-tuned from Ultralytics' AGPL-3.0 checkpoint, which
+``docs/licences.md`` states plainly.  Torch is
 roughly two gigabytes of wheel that the deployed image has no use for once the
 model is an ONNX file.  ``docker/Dockerfile.runtime`` builds without either and
 the docker CI job asserts the same thing from the outside; this test asserts it

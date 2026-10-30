@@ -3,10 +3,10 @@
 #
 # Deliberately absent: torch and ultralytics.  The detector runs on ONNX Runtime
 # or TensorRT and the appearance encoder runs on ONNX Runtime, so neither is
-# needed once the artefacts exist.  Ultralytics is AGPL-3.0 and this repository
-# is MIT, so keeping it out of the runtime keeps the deployed image
-# MIT-compatible; docs/licences.md has the reasoning and
-# tests/test_runtime_boundary.py enforces it.
+# needed once the artefacts exist.  Ultralytics is AGPL-3.0, so keeping its
+# code out of the runtime keeps the image's code MIT; the detector weights it
+# loads are still AGPL-3.0 derived.  docs/licences.md has the detail and
+# tests/test_runtime_boundary.py enforces the code boundary.
 
 numpy>=1.26,<3
 scipy>=1.11,<2

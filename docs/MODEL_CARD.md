@@ -145,9 +145,12 @@ people would require starting the analysis from scratch on real data.
 
 ## Licence
 
-The weights are MIT, as is the repository.  Fine-tuning started from an
-Ultralytics AGPL-3.0 checkpoint and the reasoning about what that implies, along
-with the runtime boundary that enforces it, is in `docs/licences.md`.
+The repository's code is MIT.  The weights are not: fine-tuning started from
+Ultralytics' AGPL-3.0 `yolov8n.pt`, so the fine-tuned checkpoint and every
+export of it carry an AGPL-3.0 obligation and closed commercial use needs an
+Ultralytics Enterprise Licence or a different detector.  `docs/licences.md`
+states the obligation and `STATUS.md` tracks the swap to an Apache-2.0
+detector.
 
 ## Provenance
 

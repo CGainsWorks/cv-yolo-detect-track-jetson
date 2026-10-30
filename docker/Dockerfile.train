@@ -1,9 +1,9 @@
 # Training and export image.  CUDA base, so this is the image that fine-tunes
 # YOLOv8 and writes the ONNX graphs.
 #
-# It contains ultralytics, which is AGPL-3.0.  That is fine here and not fine in
-# the runtime image; docs/licences.md explains the boundary and
-# docker/Dockerfile.runtime enforces it.
+# It contains ultralytics, which is AGPL-3.0 and the weights it produces are
+# AGPL-3.0 derived as well; docs/licences.md states the obligation.
+# docker/Dockerfile.runtime keeps the library itself out of the runtime.
 #
 # The default tag builds against CUDA 12.6, matching the torch wheel index in
 # requirements-train.txt.  Override with --build-arg CUDA_TAG=... if the host
